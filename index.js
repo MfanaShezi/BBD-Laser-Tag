@@ -4,15 +4,24 @@ const http = require('http');
 const server = http.createServer(app);
 const { Server } = require("socket.io");
 const io = new Server(server);
+require('dotenv').config();
+const Port = process.env.PORT || 3000;
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
+// Import the routes
+const gameRoutes = require('./routes/gameroutes.js');
+
+// Use the routes
+app.use('/', gameRoutes);
+
+
 
 io.on('connection', (socket) => {
   console.log('a user connected');
 });
 
-server.listen(3000, () => {
-  console.log('listening on http://localhost:3000/');
+console.log(Port)
+server.listen(Port, '0.0.0.0', () => {
+  console.log(`Server running at http://localhost:${Port}`);
 });
+
+
