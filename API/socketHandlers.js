@@ -1,9 +1,34 @@
 module.exports = (io, gameConfig, players, teams) => {
+
+    const rooms = {};
+
     io.on('connection', (socket) => {
         console.log(`Player connected: ${socket.id}`);
 
-        // Room and viewer tracking
-        const rooms = {};
+        // Add new player to the players map
+        players.set(socket.id, {
+            id: socket.id,
+            name: `Player ${players.size + 1}`,
+            score: 0,
+            lastHit: null,
+            team: null,
+            isActive: true,
+            respawnTime: 0,
+        });
+
+        // Broadcast updated player list
+        io.emit('playerList', Array.from(players.values()));
+
+        // Send current game state to the new player
+        socket.emit('gameState', {
+            mode: gameConfig.mode,
+            active: gameConfig.active || false,
+            timeRemaining: gameConfig.timeRemaining || gameConfig.gameTime,
+            teams: {
+                red: { score: teams.red.score, playerCount: teams.red.players.size },
+                blue: { score: teams.blue.score, playerCount: teams.blue.players.size },
+            },
+        });
 
         // Create a new room
         socket.on('createRoom', ({ mode, name }) => {
@@ -19,12 +44,13 @@ module.exports = (io, gameConfig, players, teams) => {
             rooms[roomId] = {
                 id: roomId,
                 name,
-                mode,
+                mode, // 'single' or 'team'
                 players: [],
                 spectators: [],
             };
 
             console.log(`Room created: ${name} (ID: ${roomId}, Mode: ${mode})`);
+            console.log('Current rooms:', rooms);
 
             // Notify the client that the room was created
             socket.emit('roomCreated', rooms[roomId]);
@@ -33,45 +59,46 @@ module.exports = (io, gameConfig, players, teams) => {
             io.emit('roomList', Object.values(rooms));
         });
 
-        // Handle joining a room
-        socket.on('joinRoom', ({ roomId, role }) => {
-            const room = rooms[roomId];
+        // Handle fetching room details
+        socket.on('getRoomDetails', ({ roomId }) => {
+            console.log(`Fetching details for room ID: ${roomId}`);
+            console.log('Current rooms:', rooms);
 
-            // Check if the room exists
+            const room = rooms[roomId];
             if (!room) {
                 socket.emit('roomError', 'Room not found.');
                 return;
             }
 
-            // Handle joining as a player
+            // Send room details to the client
+            socket.emit('roomDetails', {
+                id: room.id,
+                name: room.name,
+                mode: room.mode, // 'single' or 'team'
+                players: room.players,
+                spectators: room.spectators,
+            });
+        });
+
+        // Handle joining a room
+        socket.on('joinRoom', ({ roomId, role }) => {
+            const room = rooms[roomId];
+            if (!room) {
+                socket.emit('roomError', 'Room not found.');
+                return;
+            }
+
             if (role === 'player') {
                 if (!room.players.includes(socket.id)) {
                     room.players.push(socket.id);
                     console.log(`Player ${socket.id} joined room: ${room.name} (ID: ${roomId}) as a player`);
                 }
             }
-            // Handle joining as a spectator
-            else if (role === 'spectator') {
-                if (!room.spectators.includes(socket.id)) {
-                    room.spectators.push(socket.id);
-                    console.log(`Spectator ${socket.id} joined room: ${room.name} (ID: ${roomId}) as a spectator`);
-                }
-            } else {
-                socket.emit('roomError', 'Invalid role specified.');
-                return;
-            }
 
-            // Add the socket to the room
             socket.join(roomId);
 
             // Notify the room about the new participant
-            io.to(roomId).emit('roomUpdate', {
-                roomId: room.id,
-                name: room.name,
-                mode: room.mode,
-                players: room.players,
-                spectators: room.spectators,
-            });
+            io.to(roomId).emit('roomUpdate', room);
         });
 
         // Handle fetching the list of rooms
@@ -133,6 +160,20 @@ module.exports = (io, gameConfig, players, teams) => {
             }
         });
 
+        //Handle room details update
+        socket.on('roomDetails', (room) => {
+            const roomInfo = document.getElementById('roomInfo');
+            const teamButtons = document.getElementById('teamButtons');
+
+            if (room.mode === 'single') {
+                roomInfo.textContent = `You have joined the single-player room: ${room.name}`;
+                teamButtons.style.display = 'none'; // Hide team buttons for single-player mode
+            } else if (room.mode === 'team') {
+                roomInfo.textContent = `You have joined the team room: ${room.name}`;
+                teamButtons.style.display = 'block'; // Show team buttons for team mode
+            }
+        });
+
         // Handle disconnect
         socket.on('disconnect', () => {
             console.log(`Player disconnected: ${socket.id}`);
@@ -141,47 +182,25 @@ module.exports = (io, gameConfig, players, teams) => {
             for (const roomId in rooms) {
                 const room = rooms[roomId];
                 const playerIndex = room.players.indexOf(socket.id);
+                const spectatorIndex = room.spectators.indexOf(socket.id);
+
                 if (playerIndex !== -1) {
                     room.players.splice(playerIndex, 1);
-
-                    // Notify the room about the player leaving
-                    io.to(roomId).emit('roomUpdate', room);
-
-                    // If the room is empty, delete it
-                    if (room.players.length === 0 && room.spectators.length === 0) {
-                        delete rooms[roomId];
-                        console.log(`Room deleted: ${room.name} (ID: ${roomId})`);
-                    }
                 }
 
-                const spectatorIndex = room.spectators.indexOf(socket.id);
                 if (spectatorIndex !== -1) {
                     room.spectators.splice(spectatorIndex, 1);
-
-                    // Notify the room about the spectator leaving
-                    io.to(roomId).emit('roomUpdate', room);
-
-                    // If the room is empty, delete it
-                    if (room.players.length === 0 && room.spectators.length === 0) {
-                        delete rooms[roomId];
-                        console.log(`Room deleted: ${room.name} (ID: ${roomId})`);
-                    }
                 }
+
+                // Notify the room about the participant leaving
+                io.to(roomId).emit('roomUpdate', room);
+
+                // Log the room state after the player or spectator leaves
+                console.log(`Room state after disconnect:`, room);
             }
 
             // Broadcast the updated room list to all clients
             io.emit('roomList', Object.values(rooms));
-
-            const player = players.get(socket.id);
-
-            if (player) {
-                if (player.team && teams[player.team]) {
-                    teams[player.team].players.delete(socket.id);
-                }
-
-                players.delete(socket.id);
-                io.emit('playerList', Array.from(players.values()));
-            }
         });
     });
 };
