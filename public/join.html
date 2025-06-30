@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laser Tag Game - Join</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        
+        .container {
+            max-width: 800px;
+            padding: 20px;
+        }
+        
+        h1 {
+            color: #ff4081;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+        }
+        
+        p {
+            margin-bottom: 20px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+        
+        .qr-code-container {
+            background-color: #ffffff;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+        }
+        
+        .qr-code {
+            max-width: 300px;
+            height: auto;
+        }
+        
+        .join-btn {
+            display: inline-block;
+            background-color: #ff4081;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 20px;
+            margin: 20px 0;
+            box-shadow: 0 0 15px rgba(255, 64, 129, 0.7);
+            transition: all 0.3s ease;
+        }
+        
+        .join-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(255, 64, 129, 0.9);
+        }
+        
+        .instruction {
+            background-color: rgba(33, 150, 243, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .instruction h3 {
+            color: #2196f3;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Laser Tag Game</h1>
+        <p>Join the multiplayer laser tag experience using your phone's camera!</p>
+        
+        <div class="qr-code-container">
+            <h2>Scan to Join</h2>
+            <img src="/qr.png" alt="QR Code to join the game" class="qr-code">
+        </div>
+        
+        <p>Or click the button below:</p>
+        <a href="/" class="join-btn">JOIN GAME</a>
+        
+        <div class="instruction">
+            <h3>How to Join</h3>
+            <ol style="text-align: left;">
+                <li>Scan the QR code with your phone camera</li>
+                <li>Allow camera access when prompted</li>
+                <li>Enter your name and select a team</li>
+                <li>Use your phone to find and tag other players!</li>
+            </ol>
+        </div>
+        
+        <div class="instruction">
+            <h3>Game Admin</h3>
+            <p>Game organizers can access the admin panel here:</p>
+            <a href="/admin.html" style="color: #2196f3;">Admin Panel</a>
+        </div>
+    </div>
+</body>
+</html>

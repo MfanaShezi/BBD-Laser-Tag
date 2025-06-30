@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laser Tag Game - Admin Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1, h2 {
+            color: #2196f3;
+            text-align: center;
+        }
+        
+        .panel-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            background-color: #252525;
+            border-radius: 6px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #444;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        }
+        
+        .primary-btn {
+            background-color: #2196f3;
+            color: white;
+        }
+        
+        .danger-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .warning-btn {
+            background-color: #ff9800;
+            color: white;
+        }
+        
+        .player-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .player-item {
+            background-color: #333;
+            margin-bottom: 5px;
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .team-red {
+            border-left: 4px solid #f44336;
+        }
+        
+        .team-blue {
+            border-left: 4px solid #2196f3;
+        }
+        
+        .status-panel {
+            background-color: #333;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        
+        .timer {
+            font-size: 28px;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Laser Tag Game - Admin Panel</h1>
+        
+        <div class="panel-section">
+            <h2>Game Control</h2>
+            
+            <div class="form-group">
+                <label for="gameMode">Game Mode</label>
+                <select id="gameMode">
+                    <option value="freeplay">Free Play</option>
+                    <option value="team">Team Deathmatch</option>
+                    <option value="countdown">Countdown</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="gameTime">Game Time (seconds)</label>
+                <input type="number" id="gameTime" value="300" min="30" max="1800" step="30">
+            </div>
+            
+            <div class="form-group">
+                <label for="respawnTime">Respawn Time (seconds)</label>
+                <input type="number" id="respawnTime" value="5" min="1" max="30">
+            </div>
+            
+            <div class="button-group">
+                <button id="startGameBtn" class="primary-btn">Start Game</button>
+                <button id="endGameBtn" class="danger-btn">End Game</button>
+                <button id="resetScoresBtn" class="warning-btn">Reset Scores</button>
+            </div>
+        </div>
+        
+        <div class="panel-section">
+            <h2>Game Status</h2>
+            
+            <div class="status-panel">
+                <div>Status: <span id="gameStatus">Not active</span></div>
+                <div>Mode: <span id="currentMode">Freeplay</span></div>
+                <div class="timer" id="gameTimer">5:00</div>
+                <div>Red Team: <span id="redScore">0</span> points (<span id="redPlayers">0</span> players)</div>
+                <div>Blue Team: <span id="blueScore">0</span> points (<span id="bluePlayers">0</span> players)</div>
+            </div>
+        </div>
+        
+        <div class="panel-section">
+            <h2>Connected Players</h2>
+            <ul class="player-list" id="playersList">
+                <!-- Players will be listed here -->
+            </ul>
+        </div>
+    </div>
+    
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Connect to socket.io
+        const socket = io();
+        
+        // DOM elements
+        const gameMode = document.getElementById('gameMode');
+        const gameTime = document.getElementById('gameTime');
+        const respawnTime = document.getElementById('respawnTime');
+        const startGameBtn = document.getElementById('startGameBtn');
+        const endGameBtn = document.getElementById('endGameBtn');
+        const resetScoresBtn = document.getElementById('resetScoresBtn');
+        const gameStatus = document.getElementById('gameStatus');
+        const currentMode = document.getElementById('currentMode');
+        const gameTimer = document.getElementById('gameTimer');
+        const redScore = document.getElementById('redScore');
+        const blueScore = document.getElementById('blueScore');
+        const redPlayers = document.getElementById('redPlayers');
+        const bluePlayers = document.getElementById('bluePlayers');
+        const playersList = document.getElementById('playersList');
+        
+        // Game state
+        let isGameActive = false;
+        let timeRemaining = 0;
+        let timerInterval = null;
+        
+        // Format time as MM:SS
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        // Start game
+        startGameBtn.addEventListener('click', () => {
+            const options = {
+                mode: gameMode.value,
+                gameTime: parseInt(gameTime.value),
+                respawnTime: parseInt(respawnTime.value)
+            };
+            
+            socket.emit('startGame', options);
+        });
+        
+        // End game
+        endGameBtn.addEventListener('click', () => {
+            socket.emit('endGame');
+        });
+        
+        // Reset scores
+        resetScoresBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to reset all scores?')) {
+                socket.emit('resetScores');
+            }
+        });
+        
+        // Socket event handlers
+        socket.on('connect', () => {
+            console.log('Connected to server');
+        });
+        
+        socket.on('playerList', (players) => {
+            // Update player list
+            playersList.innerHTML = '';
+            
+            players.forEach(player => {
+                const li = document.createElement('li');
+                li.className = 'player-item';
+                
+                if (player.team) {
+                    li.classList.add(`team-${player.team}`);
+                }
+                
+                li.innerHTML = `
+                    <span>${player.name} ${player.isActive ? '' : '(respawning)'}</span>
+                    <span>Score: ${player.score}</span>
+                `;
+                
+                playersList.appendChild(li);
+            });
+        });
+        
+        socket.on('teamUpdate', (data) => {
+            redScore.textContent = data.red.score;
+            blueScore.textContent = data.blue.score;
+            redPlayers.textContent = data.red.playerCount;
+            bluePlayers.textContent = data.blue.playerCount;
+        });
+        
+        socket.on('gameStarted', (data) => {
+            isGameActive = true;
+            gameStatus.textContent = 'Active';
+            currentMode.textContent = data.mode.charAt(0).toUpperCase() + data.mode.slice(1);
+            timeRemaining = data.timeRemaining;
+            gameTimer.textContent = formatTime(timeRemaining);
+            
+            // Start local timer
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                gameTimer.textContent = formatTime(timeRemaining);
+                
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                }
+            }, 1000);
+        });
+        
+        socket.on('gameEnded', (data) => {
+            isGameActive = false;
+            gameStatus.textContent = 'Ended';
+            
+            // Stop timer
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            
+            // Show results
+            if (data.mode === 'team') {
+                let winnerText = data.winner === 'tie' ? "It's a tie!" : `Team ${data.winner.toUpperCase()} wins!`;
+                alert(`Game Over! ${winnerText}`);
+            } else {
+                if (data.topPlayers.length > 0) {
+                    alert(`Game Over! Winner: ${data.topPlayers[0].name} with ${data.topPlayers[0].score} points!`);
+                } else {
+                    alert('Game Over!');
+                }
+            }
+        });
+        
+        // Initial timer display
+        gameTimer.textContent = formatTime(parseInt(gameTime.value));
+    </script>
+</body>
+</html>
