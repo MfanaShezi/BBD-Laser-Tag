@@ -1,0 +1,22 @@
+{
+  "name": "laser-tag-game",
+  "version": "1.0.0",
+  "description": "Laser tag game using phone cameras and OpenCV.js",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "ip": "node -e \"console.log('Server running at: http://' + require('os').networkInterfaces()[Object.keys(require('os').networkInterfaces())[0]][0].address + ':3000')\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.0.0",
+    "express": "^5.1.0",
+    "mkcert": "^3.2.0",
+    "qrcode": "^1.5.4",
+    "qrcode-terminal": "^0.12.0",
+    "socket.io": "^4.8.1"
+  }
+}
