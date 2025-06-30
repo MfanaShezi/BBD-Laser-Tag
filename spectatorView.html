@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Spectator View</title>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <h2>Spectator View</h2>
+  <img id="stream" style="width: 100%; max-width: 800px;" />
+
+  <script>
+    const socket = io();
+    const img = document.getElementById('stream');
+
+    socket.on('frame', (data) => {
+      img.src = data;
+    });
+  </script>
+</body>
+</html>

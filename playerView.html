@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Camera Sender</title>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <h2>Sending Video...</h2>
+  <video id="video" autoplay playsinline muted style="width: 100%; max-width: 600px;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+
+  <script>
+    const socket = io();
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    
+
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      video.srcObject = stream;
+      requestAnimationFrame(sendFrame);
+    }
+
+    function sendFrame() {
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const frame = canvas.toDataURL('image/jpeg', 0.05);
+      socket.emit('frame', frame);
+    }
+
+    startCamera().then(() => {
+      setInterval(sendFrame, 200); // send every 100ms = 10fps
+    });
+
+    startCamera();
+  </script>
+</body>
+</html>
