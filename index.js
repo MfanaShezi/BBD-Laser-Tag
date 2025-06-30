@@ -1,31 +1,33 @@
 const express = require('express');
-const app = express();
-const http = require('http');
-const server = http.createServer(app);
+const fs = require('fs');                   
+const path = require('path');
 const { Server } = require("socket.io");
-const io = new Server(server);
+const https = require('https');               
+
+const app = express();
 const PORT = 3000;
 
-const path = require('path');
+// mkcert-generated cert/key
+const options = {
+  key: fs.readFileSync(path.join(__dirname, '192.168.46.52-key.pem')),
+  cert: fs.readFileSync(path.join(__dirname, '192.168.46.52.pem'))
+};
 
-app.get('/', (req, res) => {
-  res.sendFile(__dirname + '/index.html');
-});
+app.get('/',       (req, res) => res.sendFile(path.join(__dirname, 'index.html')));
+app.get('/player', (req, res) => res.sendFile(path.join(__dirname, 'playerView.html')));
+app.get('/spectator', (req, res) => res.sendFile(path.join(__dirname, 'spectatorView.html')));
 
-app.get('/player', (req, res) => {
-  res.sendFile(__dirname + '/playerView.html');
-});
 
-app.get('/spectator', (req, res) => {
-  res.sendFile(__dirname + '/spectatorView.html');
-});
+const server = https.createServer(options, app);
 
-io.on('connection', (socket) => {
+// Attach Socket.IO to the HTTPS server
+const io = new Server(server);
+
+// Socket.IO logic
+io.on('connection', socket => {
   console.log('Client connected:', socket.id);
 
-  // Receive frame from sender
-  socket.on('frame', (data) => {
-    // Broadcast to all viewers except sender
+  socket.on('frame', data => {
     socket.broadcast.emit('frame', data);
   });
 
@@ -34,24 +36,7 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(3000, () => {
-  console.log('Server running at http://localhost:3000');
+// Start listening
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`HTTPS + Socket.IO server running at https://localhost:${PORT}`);
 });
-
-// app.use(express.static(path.join(__dirname, 'public'))); // serve files from /public
-
-// app.listen(PORT, () => {
-//   const os = require('os');
-//   const interfaces = os.networkInterfaces();
-//   let localIP;
-
-//   for (const iface of Object.values(interfaces)) {
-//     for (const config of iface) {
-//       if (config.family === 'IPv4' && !config.internal) {
-//         localIP = config.address;
-//       }
-//     }
-//   }
-
-//   console.log(`Server running at http://${localIP}:${PORT}`);
-// });
