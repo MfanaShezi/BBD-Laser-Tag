@@ -97,6 +97,11 @@
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
+
+        const urlParams = new URLSearchParams(window.location.search);
+
+        const playerId = urlParams.get('playerId');
+        console.log("playerId" + playerId);
         const socket = io();
 
         // Create a room
@@ -111,12 +116,16 @@
 
         // Join a room as a player
         function joinRoomAsPlayer(roomId) {
-            window.location.href = `/JoinRoomAsPlayer.html?roomId=${roomId}`;
+            socket.emit("joinRoom", {roomId: roomId, playerId: playerId});
+
+            window.location.href = `/JoinRoomAsPlayer.html?playerId=${playerId}&roomId=${roomId}`;
         }
 
         // Join a room as a spectator
         function joinRoomAsSpectator(roomId) {
-            window.location.href = `/JoinRoomAsSpectator.html?roomId=${roomId}`;
+            socket.emit("spectateRoom", {roomId: roomId, spectatorId: playerId});
+
+            window.location.href = `/JoinRoomAsSpectator.html?playerId=${playerId}&roomId=${roomId}`;
         }
 
         // Handle room creation success

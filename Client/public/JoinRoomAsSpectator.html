@@ -70,45 +70,40 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="game-header">
-            <h1>Laser Tag Game</h1>
-            <div class="player-info">
-                <input type="text" id="playerNameInput" placeholder="Enter your name">
-                <button id="setNameBtn">Set Name</button>
-                <div id="playerScore">Score: 0</div>
-            </div>
-        </div>
-    </div>
+    
+    <h2 id="main-title">Spectating:</h2>
 
-    <script>
-        const playerNameInput = document.getElementById('playerNameInput');
-        const setNameBtn = document.getElementById('setNameBtn');
-        const playerScore = document.getElementById('playerScore');
+    <ul id="player-list">Players:</ul>
 
-        let playerName = '';
-        let score = 0;
+</body>
 
-        // Set the player's name
-        setNameBtn.onclick = () => {
-            playerName = playerNameInput.value.trim();
-            if (!playerName) {
-                alert('Please enter a valid name.');
-                return;
-            }
-            alert(`Welcome, ${playerName}!`);
-        };
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
 
-        // Example: Update the player's score (this would typically come from the server)
-        function updateScore(newScore) {
-            score = newScore;
-            playerScore.textContent = `Score: ${score}`;
+    const urlParams = new URLSearchParams(window.location.search);
+    const playerId = urlParams.get('playerId');
+    const roomId = urlParams.get('roomId');
+
+    console.log(roomId);
+
+    document.getElementById("main-title").text = "Spectating: " + roomId;
+
+    socket.emit("requestRoomInfo", {roomId: roomId});
+
+    socket.on("sendRoomInfo", (data) => {
+        console.log("Gets Here 1");
+        console.log(data.room);
+        let playerListString = "";
+
+        for (let i = 0; i < data.room.players.length; i++) {
+            playerListString += `
+                <li id="${data.room.players[i]}">${data.players[data.room.players[i]].name}</li>
+            `
         }
 
-        // Simulate score updates
-        setInterval(() => {
-            updateScore(score + 1); // Increment score every second
-        }, 1000);
-    </script>
-</body>
+        document.getElementById("player-list").innerHTML = playerListString;
+    });
+
+</script>
 </html>

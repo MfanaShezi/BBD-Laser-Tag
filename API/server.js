@@ -23,7 +23,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer);
 
 // Data structures
-const rooms = {};
+let rooms = {};
 let players = {};
 
 //routes
@@ -53,6 +53,14 @@ io.on('connection', (socket) => {
         io.emit('roomList', Object.values(rooms));
     });
 
+    socket.on("joinRoom", (data) => {
+        rooms[data.roomId].players.push(data.playerId);
+    });
+
+    socket.on("spectateRoom", (data) => {
+        rooms[data.roomId].spectators.push(data.spectatorId);
+    });
+
     // Handle fetching rooms
     socket.on('getRooms', () => {
         socket.emit('roomList', Object.values(rooms));
@@ -78,7 +86,17 @@ io.on('connection', (socket) => {
 
         console.log(players);
         socket.emit("sendPlayerId", {playerId: playerId});
-    });
+    });
+
+    socket.on("requestRoomInfo", (data) => {
+        // console.log("All Rooms");
+        // console.log(rooms);
+        // console.log("Data");
+        // console.log(data);
+        // console.log("room roomId");
+        // console.log(rooms[data.roomId]);
+        socket.emit("sendRoomInfo", {room: rooms[data.roomId], players: players});
+    });
 });
 
 // Start the server
