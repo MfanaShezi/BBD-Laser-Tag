@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Room as Player</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/security-warning.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .team-buttons {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff4081;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #e03570;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Join Room as Player</h1>
+        <!-- <p id="roomInfo">Loading room details...</p> -->
+        <h1>Laser Tag Game</h1>
+            <div class="player-info">
+                <input type="text" id="playerNameInput" placeholder="Enter your name">
+                <button id="setNameBtn">Set Name</button>
+                <div id="playerScore">Score: 0</div>
+            </div>
+
+        <div class="team-buttons" id="teamButtons" style="display: none;">
+            <button onclick="joinTeam('red')">Join Red Team</button>
+            <button onclick="joinTeam('blue')">Join Blue Team</button>
+        </div>
+
+        <div class="game-timer" id="gameTimer">
+            <span id="timeDisplay">5:00</span>
+        </div>
+    
+        <div class="camera-container">
+            <video id="videoInput" autoplay playsinline></video>
+            <canvas id="canvasOutput"></canvas>
+            <div class="targeting-overlay" id="targetingOverlay"></div>
+            <div class="respawn-overlay" id="respawnOverlay">
+                <div class="respawn-message">
+                    <h3>You were hit!</h3>
+                    <p>Respawning in <span id="respawnCounter">5</span> seconds</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button id="shootBtn" class="shoot-btn">SHOOT</button>
+        </div>
+        
+        <div class="game-status">
+            <div class="status-message" id="statusMessage">Waiting for connection...</div>
+        </div>
+        
+        <div class="player-list">
+            <h2>Players</h2>
+            <ul id="playersList"></ul>
+        </div>
+    </div>
+    
+
+    <!-- Load scripts -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="js/cv.js"></script>
+    <script src="js/aruco.js"></script>
+    <script src="js/marker-detector.js"></script>
+    <script src="js/main.js" onload="onLoad()"></script>
+    <script>
+        const socket = io();
+
+        
+        // Extract the roomId from the URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const roomId = urlParams.get('roomId');
+
+        if (roomId) {
+            socket.emit('joinRoom', { roomId, role: 'player' });
+        } else {
+            alert('Room ID is missing!');
+            window.location.href = '/room.html';
+        }
+
+        // Fetch room details from the server
+        socket.emit('getRoomDetails', { roomId });
+
+        // Handle room details response
+        socket.on('roomDetails', (room) => {
+            const roomInfo = document.getElementById('roomInfo');
+            const teamButtons = document.getElementById('teamButtons');
+
+            if (room.mode === 'single') {
+                roomInfo.textContent = `You have joined the single-player room: ${room.name}`;
+                teamButtons.style.display = 'none'; // Hide team buttons for single-player mode
+            } else if (room.mode === 'team') {
+                roomInfo.textContent = `You have joined the team room: ${room.name}`;
+                teamButtons.style.display = 'block'; // Show team buttons for team mode
+            }
+        });
+
+        // Handle errors
+        socket.on('roomError', (message) => {
+            alert(message);
+            window.location.href = '/room.html'; // Redirect back to room selection
+        });
+
+        // Join a team
+        function joinTeam(teamName) {
+            socket.emit('joinTeam', { roomId, teamName });
+        }
+    </script>
+    
+</body>
+</html>
