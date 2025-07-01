@@ -9,6 +9,7 @@
     "ip": "node -e \"console.log('Server running at: http://' + require('os').networkInterfaces()[Object.keys(require('os').networkInterfaces())[0]][0].address + ':3000')\""
   },
   "keywords": [],
+  "type": "module",
   "author": "",
   "license": "ISC",
   "dependencies": {

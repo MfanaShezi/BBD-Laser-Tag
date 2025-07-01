@@ -16,21 +16,10 @@ module.exports = (io, gameConfig, players, teams) => {
             respawnTime: 0,
         });
 
-        // Broadcast updated player list
+        // Emit updated player list
         io.emit('playerList', Array.from(players.values()));
 
-        // Send current game state to the new player
-        socket.emit('gameState', {
-            mode: gameConfig.mode,
-            active: gameConfig.active || false,
-            timeRemaining: gameConfig.timeRemaining || gameConfig.gameTime,
-            teams: {
-                red: { score: teams.red.score, playerCount: teams.red.players.size },
-                blue: { score: teams.blue.score, playerCount: teams.blue.players.size },
-            },
-        });
-
-        // Create a new room
+        // Handle room creation
         socket.on('createRoom', ({ mode, name }) => {
             if (!mode || !name) {
                 socket.emit('roomError', 'Room name and mode are required.');
@@ -88,17 +77,42 @@ module.exports = (io, gameConfig, players, teams) => {
                 return;
             }
 
+            // Add the player to the room
             if (role === 'player') {
                 if (!room.players.includes(socket.id)) {
                     room.players.push(socket.id);
                     console.log(`Player ${socket.id} joined room: ${room.name} (ID: ${roomId}) as a player`);
                 }
+            } else if (role === 'spectator') {
+                if (!room.spectators.includes(socket.id)) {
+                    room.spectators.push(socket.id);
+                    console.log(`Spectator ${socket.id} joined room: ${room.name} (ID: ${roomId}) as a spectator`);
+                }
+            } else {
+                socket.emit('roomError', 'Invalid role specified.');
+                return;
             }
 
+            // Join the socket.io room
             socket.join(roomId);
 
+            // Debug the room state
+            console.log('Updated room state:', room);
+
+            // Send room details to the client
+            socket.emit('roomDetails', room);
+
             // Notify the room about the new participant
-            io.to(roomId).emit('roomUpdate', room);
+            io.to(roomId).emit('roomUpdate', {
+                roomId: room.id,
+                name: room.name,
+                mode: room.mode,
+                players: room.players,
+                spectators: room.spectators,
+            });
+
+            // Broadcast the updated room list to all clients
+            io.emit('roomList', Object.values(rooms));
         });
 
         // Handle fetching the list of rooms
@@ -106,8 +120,19 @@ module.exports = (io, gameConfig, players, teams) => {
             socket.emit('roomList', Object.values(rooms));
         });
 
+        // Handle name change
+        socket.on('setName', (name) => {
+            const player = players.get(socket.id);
+            if (player) {
+                player.name = name;
+
+                // Emit updated player list
+                io.emit('playerList', Array.from(players.values()));
+            }
+        });
+
         // Player joins a team
-        socket.on('joinTeam', (teamName) => {
+        socket.on('joinTeam', ({ teamName }) => {
             const player = players.get(socket.id);
 
             if (player) {
@@ -158,6 +183,9 @@ module.exports = (io, gameConfig, players, teams) => {
                     }
                 }, gameConfig.respawnTime * 1000);
             }
+
+            // Emit updated player list
+            io.emit('playerList', Array.from(players.values()));
         });
 
         //Handle room details update
@@ -194,13 +222,13 @@ module.exports = (io, gameConfig, players, teams) => {
 
                 // Notify the room about the participant leaving
                 io.to(roomId).emit('roomUpdate', room);
-
-                // Log the room state after the player or spectator leaves
-                console.log(`Room state after disconnect:`, room);
             }
 
-            // Broadcast the updated room list to all clients
-            io.emit('roomList', Object.values(rooms));
+            // Remove the player from the players map
+            players.delete(socket.id);
+
+            // Broadcast the updated player list
+            io.emit('playerList', Array.from(players.values()));
         });
     });
 };
