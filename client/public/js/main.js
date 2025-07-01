@@ -1,3 +1,7 @@
+// Shooting Game event code
+let detectedMarkers = []; // At the top, with your other global variables
+
+
 // Connect to the server
 const socket = io();
 let currentPlayer = {
@@ -33,9 +37,104 @@ function onLoad() {
         maxHammingDistance: 7 // Balance between detection accuracy and sensitivity
     });
 
+    // Shooting button code
+    document.getElementById('shootBtn').addEventListener('click', handleShot);
+
     checkSecureContext();
     
     startCamera();
+}
+
+// Function to handle a shot
+function handleShot(event) {
+    // Get the center of the canvas where the shooting marker is
+    const centerX = canvasOutput.width / 2;
+    const centerY = canvasOutput.height / 2;
+
+    let hit = false;
+    let hitMarkerId = null;
+
+    // Iterate through currently detected markers
+    for (const marker of detectedMarkers) {
+        // Check if the shot coordinates are inside the marker's bounds.
+        // A simple way is to use the marker's corners.
+        // This is a basic point-in-polygon check. For perfect accuracy,
+        // you might use a more robust polygon containment algorithm.
+        if (isPointInPolygon({ x: centerX, y: centerY }, marker.corners)) {
+            hit = true;
+            hitMarkerId = marker.id;
+            console.log(`Hit detected! Marker ID: ${marker.id}`);
+            break; // Stop checking after the first hit
+        }
+    }
+
+    if (hit) {
+        // --- Trigger Hit Visuals/Sound ---
+        // For example, flash the screen green, play a sound, etc.
+        showHitFeedback();
+
+        // --- Update Score and Send to Server ---
+        currentPlayer.score++;
+        // Update UI
+        document.getElementById('playerScore').textContent = currentPlayer.score;
+        // Send hit information to the server
+        socket.emit('playerHit', { playerId: currentPlayer.id, markerId: hitMarkerId, score: currentPlayer.score });
+
+    } else {
+        console.log("Miss!");
+        showMissFeedback();
+    }
+}
+
+// --- NEW: Helper function for point-in-polygon check ---
+// This is a common algorithm (Ray Casting or Winding Number)
+function isPointInPolygon(point, polygon) {
+    let x = point.x, y = point.y;
+    let inside = false;
+    for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+        let xi = polygon[i].x, yi = polygon[i].y;
+        let xj = polygon[j].x, yj = polygon[j].y;
+
+        let intersect = ((yi > y) != (yj > y)) &&
+            (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+        if (intersect) inside = !inside;
+    }
+    return inside;
+}
+
+// --- NEW: Feedback functions (implement these visually/audibly) ---
+function showHitFeedback() {
+    // Example: Briefly flash the canvas with a green overlay
+    const feedbackOverlay = document.createElement('div');
+    feedbackOverlay.style.position = 'absolute';
+    feedbackOverlay.style.top = '0';
+    feedbackOverlay.style.left = '0';
+    feedbackOverlay.style.width = '100%';
+    feedbackOverlay.style.height = '100%';
+    feedbackOverlay.style.backgroundColor = 'rgba(0, 255, 0, 0.3)'; // Semi-transparent green
+    feedbackOverlay.style.zIndex = '1000'; // Ensure it's on top
+    document.body.appendChild(feedbackOverlay);
+
+    setTimeout(() => {
+        document.body.removeChild(feedbackOverlay);
+    }, 100); // Remove after 100ms
+}
+
+function showMissFeedback() {
+    // Example: Briefly flash the canvas with a red overlay
+    const feedbackOverlay = document.createElement('div');
+    feedbackOverlay.style.position = 'absolute';
+    feedbackOverlay.style.top = '0';
+    feedbackOverlay.style.left = '0';
+    feedbackOverlay.style.width = '100%';
+    feedbackOverlay.style.height = '100%';
+    feedbackOverlay.style.backgroundColor = 'rgba(255, 0, 0, 0.3)'; // Semi-transparent red
+    feedbackOverlay.style.zIndex = '1000';
+    document.body.appendChild(feedbackOverlay);
+
+    setTimeout(() => {
+        document.body.removeChild(feedbackOverlay);
+    }, 100);
 }
 
 
@@ -43,6 +142,9 @@ function startCamera() {
     console.log('Starting camera...');
     video = document.getElementById('videoInput');
     canvasOutput = document.getElementById('canvasOutput');
+
+    // Shot event code
+    canvasOutput.addEventListener('click', handleShot);
     
     // Create hidden canvas for processing
     canvasProcessing = document.createElement('canvas');
@@ -102,20 +204,60 @@ function processVideo() {
             
             if (markers && markers.length > 0) {
                 console.log(`Detected ${markers.length} markers`);
+                detectedMarkers = markers; // Store detected markers
                 processDetectedMarkers(markers, ctxOutput);
             } else {
+                detectedMarkers = []; // Clear markers if none are detected
             }
         } catch (detectErr) {
             console.error("Detection error:", detectErr);
         }
+
+        // --- NEW: Draw Shooting Marker ---
+        drawShootingMarker(ctxOutput);
+        // --- END NEW ---
         
         // Calculate and schedule next frame
         let delay = 1000 / 30 - (Date.now() - begin);
         setTimeout(processVideo, delay > 0 ? delay : 0);
         } catch (err) {
             console.error(err);
-    }
+        }
 }
+
+// --- NEW: Function to draw the shooting marker ---
+function drawShootingMarker(ctx) {
+    const centerX = ctx.canvas.width / 2;
+    const centerY = ctx.canvas.height / 2;
+    const markerSize = 20; // Size of the crosshair lines
+    const gap = 5; // Gap in the center of the crosshair
+
+    ctx.strokeStyle = 'red'; // Color of the marker
+    ctx.lineWidth = 2; // Thickness of the marker lines
+
+    // Draw horizontal line
+    ctx.beginPath();
+    ctx.moveTo(centerX - markerSize / 2, centerY);
+    ctx.lineTo(centerX - gap, centerY);
+    ctx.moveTo(centerX + gap, centerY);
+    ctx.lineTo(centerX + markerSize / 2, centerY);
+    ctx.stroke();
+
+    // Draw vertical line
+    ctx.beginPath();
+    ctx.moveTo(centerX, centerY - markerSize / 2);
+    ctx.lineTo(centerX, centerY - gap);
+    ctx.moveTo(centerX, centerY + gap);
+    ctx.lineTo(centerX, centerY + markerSize / 2);
+    ctx.stroke();
+
+    // Optionally, draw a small circle in the center
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 3, 0, 2 * Math.PI);
+    ctx.fillStyle = 'red';
+    ctx.fill();
+}
+// --- END NEW ---
 
     // Helper function to process detected markers
 function processDetectedMarkers(markers, ctxOutput) {
@@ -224,6 +366,8 @@ function getMarkerCenter(marker) {
     };
 }
 
+
+
 // // Helper function to get additional information for specific marker IDs
 // function getMarkerInfo(markerId) {
 //     // You can customize this with your own marker meanings
@@ -320,7 +464,7 @@ function showHitConfirmation(x, y) {
 }
 
 
-
+/*---------------------------------------------------------------------------------------*/
 
 
 
