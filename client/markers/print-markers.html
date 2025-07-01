@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laser Tag Markers</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1 {
+            text-align: center;
+        }
+        
+        .markers-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+        }
+        
+        .marker {
+            border: 1px solid #ccc;
+            padding: 10px;
+            position: relative;
+            page-break-inside: avoid;
+        }
+        
+        .marker-id {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .marker-pattern {
+            width: 200px;
+            height: 200px;
+            background-color: white;
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            border: 20px solid black;
+        }
+        
+        .marker-cell {
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .marker-cell.filled {
+            background-color: black;
+        }
+        
+        .print-instructions {
+            margin-top: 40px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        @media print {
+            .print-instructions {
+                display: none;
+            }
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>Laser Tag Game Markers</h1>
+    
+    <div class="print-instructions">
+        <h2>Instructions:</h2>
+        <ol>
+            <li>Print this page</li>
+            <li>Cut out each marker along its border</li>
+            <li>Attach the marker to your chest or a flat surface</li>
+            <li>Ensure the marker is clearly visible to other players' cameras</li>
+        </ol>
+        <p><strong>Note:</strong> For best detection results, print on white paper and make sure the black areas are dark and clearly defined.</p>
+    </div>
+    
+    <div class="markers-container" id="markers">
+        <!-- Markers will be generated here -->
+    </div>
+    
+    <script>
+        // Generate 6 unique markers with different patterns
+        const markersContainer = document.getElementById('markers');
+        const numMarkers = 6;
+        
+        for (let i = 1; i <= numMarkers; i++) {
+            // Create marker container
+            const marker = document.createElement('div');
+            marker.className = 'marker';
+            
+            // Create marker pattern
+            const pattern = document.createElement('div');
+            pattern.className = 'marker-pattern';
+            
+            // Generate unique pattern based on marker ID
+            const seed = i * 12345;
+            
+            // Fill the grid with cells
+            for (let j = 0; j < 36; j++) {
+                const cell = document.createElement('div');
+                cell.className = 'marker-cell';
+                
+                // Create deterministic pattern based on seed and position
+                // Skip cells on the outer ring (for better detection)
+                const row = Math.floor(j / 6);
+                const col = j % 6;
+                
+                if (row > 0 && row < 5 && col > 0 && col < 5) {
+                    // Only fill inner cells
+                    const shouldFill = Math.sin(seed * (j + 1)) > 0;
+                    if (shouldFill) {
+                        cell.classList.add('filled');
+                    }
+                }
+                
+                pattern.appendChild(cell);
+            }
+            
+            // Add ID label
+            const idLabel = document.createElement('div');
+            idLabel.className = 'marker-id';
+            idLabel.textContent = `ID: ${i}`;
+            
+            // Assemble marker
+            marker.appendChild(pattern);
+            marker.appendChild(idLabel);
+            
+            markersContainer.appendChild(marker);
+        }
+    </script>
+</body>
+</html>

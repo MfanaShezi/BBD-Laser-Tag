@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laser Tag Lobby</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #ff4081;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 400px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff4081;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #e03570;
+        }
+
+        .room-list {
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .room-item {
+            margin-bottom: 10px;
+        }
+
+        .room-item button {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Laser Tag Lobby</h1>
+        <p>Create or join a room to start playing!</p>
+
+        <input type="text" id="roomNameInput" placeholder="Enter Room Name">
+        <button onclick="createRoom('single')">Create Single Player Room</button>
+        <button onclick="createRoom('team')">Create Team Room</button>
+
+        <div class="room-list" id="singlePlayerRooms">
+            <h2>Single Player Rooms</h2>
+            <!-- Single player rooms will be dynamically added here -->
+        </div>
+
+        <div class="room-list" id="teamRooms">
+            <h2>Team Rooms</h2>
+            <!-- Team rooms will be dynamically added here -->
+        </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        // Create a room
+        function createRoom(mode) {
+            const roomName = document.getElementById('roomNameInput').value.trim();
+            if (!roomName) {
+                alert('Please enter a room name.');
+                return;
+            }
+            socket.emit('createRoom', { mode, name: roomName });
+        }
+
+        // Join a room as a player
+        function joinRoomAsPlayer(roomId) {
+            window.location.href = `/JoinRoomAsPlayer.html?roomId=${roomId}`;
+        }
+
+        // Join a room as a spectator
+        function joinRoomAsSpectator(roomId) {
+            window.location.href = `/JoinRoomAsSpectator.html?roomId=${roomId}`;
+        }
+
+        // Handle room creation success
+        socket.on('roomCreated', (room) => {
+            alert(`Room "${room.name}" created successfully!`);
+            updateRoomList();
+        });
+
+        // Handle errors
+        socket.on('roomError', (message) => {
+            alert(message);
+        });
+
+        // Update room list
+        function updateRoomList() {
+            socket.emit('getRooms');
+        }
+
+        // Render room list
+        socket.on('roomList', (rooms) => {
+            const singlePlayerRooms = document.getElementById('singlePlayerRooms');
+            const teamRooms = document.getElementById('teamRooms');
+
+            singlePlayerRooms.innerHTML = '<h2>Single Player Rooms</h2>';
+            teamRooms.innerHTML = '<h2>Team Rooms</h2>';
+
+            rooms.forEach((room) => {
+                const roomItem = document.createElement('div');
+                roomItem.className = 'room-item';
+                roomItem.innerHTML = `
+                    ${room.name} (ID: ${room.id}, Mode: ${room.mode})
+                    <button onclick="joinRoomAsPlayer('${room.id}')">Join as Player</button>
+                    <button onclick="joinRoomAsSpectator('${room.id}')">Join as Spectator</button>
+                `;
+
+                if (room.mode === 'single') {
+                    singlePlayerRooms.appendChild(roomItem);
+                } else if (room.mode === 'team') {
+                    teamRooms.appendChild(roomItem);
+                }
+            });
+        });
+
+        // Request initial room list
+        updateRoomList();
+    </script>
+</body>
+</html>

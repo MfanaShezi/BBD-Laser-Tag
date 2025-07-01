@@ -55,15 +55,9 @@
 
     <!-- Load scripts -->
     <script src="/socket.io/socket.io.js"></script>
-    <script>
-        // Create a custom event to notify when OpenCV.js is ready
-        function onOpenCvReady() {
-            console.log('OpenCV.js is ready');
-            document.dispatchEvent(new CustomEvent('opencv-ready'));
-        }
-    </script>
-    <script src="js/opencv.js" onload="onOpenCvReady();" async></script>
-    <script src="js/marker-detector.js"></script>
+
+    <script src="js/cv.js"></script>
+    <script src="js/aruco.js" onload="onLoad()"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

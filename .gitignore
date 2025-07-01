@@ -12,6 +12,11 @@ yarn.lock
 .env.development.local
 .env.test.local
 .env.production.local
+#.venv  
+# Ignore virtual environments
+.venv/
+# Ignore Python virtual environments
+venv/
 
 # Build outputs
 dist/
