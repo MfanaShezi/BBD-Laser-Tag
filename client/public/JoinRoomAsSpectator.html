@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Join Room as Player</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/security-warning.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #ff4081;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 400px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff4081;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #e03570;
+        }
+
+        #playerScore {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    
+    <h2 id="main-title">Spectating:</h2>
+
+    <ul id="player-list">Players:</ul>
+
+</body>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const playerId = urlParams.get('playerId');
+    const roomId = urlParams.get('roomId');
+
+    console.log(roomId);
+
+    document.getElementById("main-title").text = "Spectating: " + roomId;
+
+    socket.emit("requestRoomInfo", {roomId: roomId});
+
+    socket.on("sendRoomInfo", (data) => {
+        console.log("Gets Here 1");
+        console.log(data.room);
+        let playerListString = "";
+
+        for (let i = 0; i < data.room.players.length; i++) {
+            playerListString += `
+                <li id="${data.room.players[i]}">${data.players[data.room.players[i]].name}</li>
+            `
+        }
+
+        document.getElementById("player-list").innerHTML = playerListString;
+    });
+
+</script>
+</html>

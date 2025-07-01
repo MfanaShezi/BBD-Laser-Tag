@@ -1,86 +1,164 @@
-const express = require('express');
-const https = require('https');
-const socketIO = require('socket.io');
-const fs = require('fs');
-const path = require('path');
-const QRCode = require('qrcode'); // Ensure you have the 'qrcode' package installed
-const QRCodeTerminal = require('qrcode-terminal'); // Import qrcode-terminal
-const os = require('os'); 
-require('dotenv').config();
+import path from 'path';
+import { fileURLToPath } from 'url'; // Ensure this is imported only once
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import dotenv from 'dotenv';
 
-// Load mkcert certificates
-const options = {
-    key: fs.readFileSync(path.join(__dirname, '192.168.46.52-key.pem')),
-    cert: fs.readFileSync(path.join(__dirname, '192.168.46.52.pem'))
-};
+import os from 'os';
+import QRCode from 'qrcode';
+import fs from 'fs';
 
-// Initialize our express app
-const app = express();
-const server = https.createServer(options, app);
-const io = socketIO(server);
-
-// Import routes
-const gameRoutes = require('./routes/gameroutes');
-app.use('/', gameRoutes);
-
-// Middleware
-app.use(express.static(path.join(__dirname, '../client/public')));
-app.use('/markers', express.static(path.join(__dirname, '../client/markers')));
-
-// Game configuration and state
-const gameConfig = { mode: 'freeplay', respawnTime: 5, gameTime: 300, teams: ['red', 'blue'] };
-const players = new Map();
-const teams = {
-    red: { score: 0, players: new Set() },
-    blue: { score: 0, players: new Set() }
-};
-
-// Import and initialize Socket.IO handlers
-const socketHandlers = require('./socketHandlers');
-socketHandlers(io, gameConfig, players, teams);
-
-// Function to generate and save the QR code, and display it in the terminal
-function generateQRCode(url) {
-    const qrCodePath = path.join(__dirname, '../client/public/qr.png'); // Adjust path as needed
-
-    // Save the QR code to a file
-    QRCode.toFile(qrCodePath, url, (err) => {
-        if (err) {
-            console.error('Error generating QR code:', err);
-        } else {
-            console.log(`QR code saved to ${qrCodePath}`);
-        }
-    });
-
-    // Display the QR code in the terminal
-    QRCodeTerminal.generate(url, { small: true }, (qrcode) => {
-        console.log('Scan this QR code to join the game:');
-        console.log(qrcode);
-    });
-}
-
-// Example usage: Generate a QR code for the game URL
-
-function getLocalIP() {
-    const interfaces = os.networkInterfaces();
-    for (const iface of Object.values(interfaces)) {
-        for (const details of iface) {
-            if (details.family === 'IPv4' && !details.internal && details.address.startsWith('192.168.46.')) {
-                return details.address;
-            }
-        }
-    }
-    return '127.0.0.1';
-}
+// Load environment variables from .env file
+dotenv.config();
 
 const PORT = process.env.PORT || 3000;
-const ip = getLocalIP(); // Replace with your logic to get the local IP address
-console.log(ip);
-const gameUrl = `https://${ip}:${PORT}/index.html`;
 
-generateQRCode(gameUrl);
+// Initialize Express app
+const app = express();
+
+// Serve static files
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+app.use(express.static(path.join(__dirname, '../client/public')));
+
+// Create HTTP server and WebSocket server
+const httpServer = createServer(app);
+const io = new Server(httpServer);
+
+// Data structures
+let rooms = {};
+let players = {};
+
+//routes
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../client/public/index.html')));
+app.get('/playerCreation', (req, res) => res.sendFile(path.join(__dirname, '../client/public/playerCreation.html')));
+app.get('/room', (req, res) => res.sendFile(path.join(__dirname, '../client/public/room.html')));
+
+
+
+
+// WebSocket logic
+io.on('connection', (socket) => {
+    console.log('A user connected:', socket.id);
+
+    // Handle room creation
+    socket.on('createRoom', ({ mode, name }) => {
+        if (!mode || !name) {
+            socket.emit('roomError', 'Room name and mode are required.');
+            return;
+        }
+
+        const roomId = (Math.random() + 1).toString(36).substring(2);
+        rooms[roomId] = { id: roomId, name, mode, players: [], spectators: [] };
+
+        console.log(`Room created: ${name} (ID: ${roomId}, Mode: ${mode})`);
+        socket.emit('roomCreated', rooms[roomId]);
+        io.emit('roomList', Object.values(rooms));
+    });
+
+    socket.on("joinRoom", (data) => {
+        rooms[data.roomId].players.push(data.playerId);
+    });
+
+    socket.on("spectateRoom", (data) => {
+        rooms[data.roomId].spectators.push(data.spectatorId);
+    });
+
+    // Handle fetching rooms
+    socket.on('getRooms', () => {
+        socket.emit('roomList', Object.values(rooms));
+        console.log('Rooms sent to client:', Object.values(rooms));
+    });
+
+    // Handle client disconnect
+    socket.on('disconnect', () => {
+        console.log('A user disconnected:', socket.id);
+    });
+
+
+    //Player logic 
+
+    socket.on('requestPlayerId', (data) => {
+        let playerId = Date.now().toString();
+
+        console.log("Player Id: " + playerId);
+
+        players[playerId] = {
+            name: data.playerName
+        }
+
+        console.log(players);
+        socket.emit("sendPlayerId", {playerId: playerId});
+    });
+
+    socket.on("requestRoomInfo", (data) => {
+        // console.log("All Rooms");
+        // console.log(rooms);
+        // console.log("Data");
+        // console.log(data);
+        // console.log("room roomId");
+        // console.log(rooms[data.roomId]);
+        socket.emit("sendRoomInfo", {room: rooms[data.roomId], players: players});
+    });
+});
 
 // Start the server
-server.listen(PORT, () => {
-    console.log(`Server running on https://localhost:${PORT}`);
+httpServer.listen(PORT, () => {
+    const ip = getLocalIP();
+    const url = `http://${ip}:${PORT}`;
+
+    console.log(`Server is running on http://localhost:${PORT}`);
+
+    // Generate QR code for the URL
+    generateQRCode(url);
+    // Also create a text file with the URL for easy sharing
+    fs.writeFileSync(path.join(__dirname, 'game-url.txt'), url);
 });
+
+// Find the server's local IP address
+function getLocalIP() {
+  const interfaces = os.networkInterfaces();
+  for (const iface in interfaces) {
+    for (const details of interfaces[iface]) {
+      // Skip over non-IPv4 and internal (loopback) addresses
+      if (details.family === 'IPv4' && !details.internal) {
+        return details.address;
+      }
+    }
+  }
+  return '127.0.0.1'; // Default to localhost if no external IP found
+}
+
+// Generate QR code for easy access
+function generateQRCode(url) {
+  const qrPath = path.join(__dirname, 'qr.png');
+  
+  QRCode.toFile(qrPath, url, {
+    errorCorrectionLevel: 'H',
+    margin: 1,
+    scale: 8,
+    color: {
+      dark: '#000000',
+      light: '#ffffff'
+    }
+  }, (err) => {
+    if (err) {
+      console.error('Error generating QR code:', err);
+    } else {
+      console.log('QR code generated successfully at /qr.png');
+    }
+  });
+
+  // Also generate the QR code as a data URL for console display
+  QRCode.toString(url, {
+    type: 'terminal',
+    errorCorrectionLevel: 'L',
+    small: true
+  }, (err, qrString) => {
+    if (!err) {
+      console.log('\nScan this QR code to join the game:');
+      console.log(qrString);
+    }
+  });
+}
