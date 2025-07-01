@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Creation</title>
+</head>
+<body>
+    <h1>Enter Player Name</h1>
+    <input id="player-name" type="text">
+    <br>
+    <br>
+    <button id="begin-btn">Begin</button>
+</body>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        document.getElementById("begin-btn").addEventListener("click", () => {
+            console.log('Gets Here');
+            socket.emit("requestPlayerId", {playerName: document.getElementById("player-name").value});
+        });
+
+        socket.on("sendPlayerId", (data) => {
+            window.location.href = `/room?playerId=${data.playerId}`;
+        });
+    </script>
+</html>
