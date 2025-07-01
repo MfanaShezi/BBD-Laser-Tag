@@ -397,24 +397,28 @@ function getMarkerCenter(marker) {
 
 // Handle shoot button click - UPDATED
 shootBtn.addEventListener('click', function() {
+    playLaserSound();
     if (targetInCrosshair) {
         // Visual feedback
         shootBtn.classList.add('active');
         setTimeout(() => shootBtn.classList.remove('active'), 200);
         
-        // Play sound effect
-        playLaserSound();
-        
         // Send hit event to server
         socket.emit('hit', targetInCrosshair.playerId);
+
+        setTimeout(() => {
+            playHitSound();
+        }, 250);
         
         // Show hit confirmation
         showHitConfirmation(targetInCrosshair.center.x, targetInCrosshair.center.y);
         
         statusMessage.textContent = `Shot fired at player ${targetInCrosshair.playerId}!`;
     } else {
+        // playLaserSound();
         statusMessage.textContent = 'No target in crosshair!';
     }
+    
 });
 
 // Sound effects
@@ -422,6 +426,24 @@ const sounds = {
     laser: new Audio('sound/laser.mp3'),
     hit: new Audio('sound/hit.mp3')
 };
+
+// Preload and configure sounds
+sounds.laser.volume = 0.4;
+sounds.hit.volume = 0.6;
+
+// Play laser sound effect
+function playLaserSound() {
+    // Clone the audio to allow for rapid firing
+    const sound = sounds.laser.cloneNode();
+    sound.play().catch(e => console.log('Sound play error:', e));
+}
+
+// Play hit sound effect
+function playHitSound() {
+    // Clone the audio to allow for overlapping sounds
+    const sound = sounds.hit.cloneNode();
+    sound.play().catch(e => console.log('Sound play error:', e));
+}
 
 // Show hit confirmation animation
 function showHitConfirmation(x, y) {
@@ -442,24 +464,6 @@ function showHitConfirmation(x, y) {
             targetingOverlay.removeChild(hitEffect);
         }
     }, 800);
-}
-
-// Preload and configure sounds
-sounds.laser.volume = 0.4;
-sounds.hit.volume = 0.6;
-
-// Play laser sound effect
-function playLaserSound() {
-    // Clone the audio to allow for rapid firing
-    const sound = sounds.laser.cloneNode();
-    sound.play().catch(e => console.log('Sound play error:', e));
-}
-
-// Play hit sound effect
-function playHitSound() {
-    // Clone the audio to allow for overlapping sounds
-    const sound = sounds.hit.cloneNode();
-    sound.play().catch(e => console.log('Sound play error:', e));
 }
 
 
