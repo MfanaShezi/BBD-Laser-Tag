@@ -1,9 +1,9 @@
-import express from 'express';
 import path from 'path';
-import { fileURLToPath } from 'url';
-import { createServer } from 'http'; // Import createServer from 'http'
-import dotenv from 'dotenv';
+import { fileURLToPath } from 'url'; // Ensure this is imported only once
+import express from 'express';
+import { createServer } from 'http';
 import { Server } from 'socket.io';
+import dotenv from 'dotenv';
 
 // Load environment variables from .env file
 dotenv.config();
@@ -24,6 +24,14 @@ const io = new Server(httpServer);
 
 // Data structures
 const rooms = {};
+let players = {};
+
+//routes
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../client/public/playerCreation.html')));
+app.get('/room', (req, res) => res.sendFile(path.join(__dirname, '../client/public/room.html')));
+
+
+
 
 // WebSocket logic
 io.on('connection', (socket) => {
@@ -44,7 +52,7 @@ io.on('connection', (socket) => {
         io.emit('roomList', Object.values(rooms));
     });
 
-    //get rooms
+    // Handle fetching rooms
     socket.on('getRooms', () => {
         socket.emit('roomList', Object.values(rooms));
         console.log('Rooms sent to client:', Object.values(rooms));
@@ -54,6 +62,22 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('A user disconnected:', socket.id);
     });
+
+
+    //Player logic 
+
+    socket.on('requestPlayerId', (data) => {
+        let playerId = Date.now().toString();
+
+        console.log("Player Id: " + playerId);
+
+        players[playerId] = {
+            name: data.playerName
+        }
+
+        console.log(players);
+        socket.emit("sendPlayerId", {playerId: playerId});
+    });
 });
 
 // Start the server
