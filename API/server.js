@@ -27,7 +27,8 @@ const rooms = {};
 let players = {};
 
 //routes
-app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../client/public/playerCreation.html')));
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../client/public/index.html')));
+app.get('/playerCreation', (req, res) => res.sendFile(path.join(__dirname, '../client/public/playerCreation.html')));
 app.get('/room', (req, res) => res.sendFile(path.join(__dirname, '../client/public/room.html')));
 
 
