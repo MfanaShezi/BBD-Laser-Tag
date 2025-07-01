@@ -76,7 +76,7 @@ function getLocalIP() {
 const PORT = process.env.PORT || 3000;
 const ip = getLocalIP(); // Replace with your logic to get the local IP address
 console.log(ip);
-const gameUrl = `https://${ip}:${PORT}/room`;
+const gameUrl = `https://${ip}:${PORT}/index.html`;
 
 generateQRCode(gameUrl);
 
