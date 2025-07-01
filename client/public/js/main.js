@@ -3,8 +3,11 @@ const socket = io();
 let currentPlayer = {
     id: null,
     name: '',
-    score: 0
+    score: 0,
+    health: 3
 };
+
+let targetInCrosshair = null;
 
 
 let video = null;
@@ -104,10 +107,14 @@ function processVideo() {
                 console.log(`Detected ${markers.length} markers`);
                 processDetectedMarkers(markers, ctxOutput);
             } else {
+                targetInCrosshair = null;
             }
         } catch (detectErr) {
             console.error("Detection error:", detectErr);
         }
+
+        // Draw crosshair in the center of the canvas
+        drawCrosshair(ctxOutput);
         
         // Calculate and schedule next frame
         let delay = 1000 / 30 - (Date.now() - begin);
@@ -117,9 +124,49 @@ function processVideo() {
     }
 }
 
+// Helper function to draw crosshair in the center of the canvas
+function drawCrosshair(ctx) {
+    const centerX = canvasOutput.width / 2;
+    const centerY = canvasOutput.height / 2;
+    // const size = 20;
+    const size = Math.min(canvasOutput.width, canvasOutput.height) * 0.05;
+    
+    ctx.lineWidth = 2;
+    // Change color based on whether there's a target in crosshair
+    if (targetInCrosshair) {
+        // Red when over a marker
+        ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+    } else {
+        // Black when not over a marker
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+    }
+    
+    // Draw crosshair lines
+    ctx.beginPath();
+    // Horizontal line
+    ctx.moveTo(centerX - size, centerY);
+    ctx.lineTo(centerX + size, centerY);
+    // Vertical line
+    ctx.moveTo(centerX, centerY - size);
+    ctx.lineTo(centerX, centerY + size);
+    ctx.stroke();
+    
+    // Draw small circle in center
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, 4, 0, 2 * Math.PI);
+    ctx.stroke();
+}
+
     // Helper function to process detected markers
 function processDetectedMarkers(markers, ctxOutput) {
     if (markers.length > 0) {
+        // Reset current target
+        targetInCrosshair = null;
+
+         // Center point of the canvas
+        const centerX = canvasOutput.width / 2;
+        const centerY = canvasOutput.height / 2;
+        
         // Draw detected markers
         markers.forEach(marker => {
             // Draw marker outline
@@ -129,7 +176,7 @@ function processDetectedMarkers(markers, ctxOutput) {
             const center = getMarkerCenter(marker);
             
             // Use different colors based on marker ID
-            const colorHue = (marker.id * 30) % 360;
+            const colorHue = (marker.id+1 * 30) % 360;
             const color = hsvToRgb(colorHue / 360, 1, 1);
             
             // Draw marker ID
@@ -137,16 +184,112 @@ function processDetectedMarkers(markers, ctxOutput) {
             ctxOutput.font = '20px Arial';
             ctxOutput.fillText(`ID: ${marker.id}`, center.x - 20, center.y - 15);
             
-            // Get additional info based on marker ID
-            // const info = getMarkerInfo(marker.id);
-            // if (info) {
-            //     ctxOutput.font = '16px Arial';
-            //     ctxOutput.fillText(info, center.x - 30, center.y + 30);
-            // }
+            // Check if center point is inside this marker
+            if (isPointInMarker({x: centerX, y: centerY}, marker)) {
+                // Store the target marker if center is inside it
+                targetInCrosshair = {
+                    id: marker.id,
+                    playerId: marker.playerId, // This should be set elsewhere in your code
+                    playerTeam: marker.playerTeam, // This should be set elsewhere in your code
+                    center: center
+                };
+                
+                // Highlight the target marker
+                ctxOutput.lineWidth = 6;
+                ctxOutput.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                ctxOutput.strokeRect(
+                    center.x - 30,
+                    center.y - 30,
+                    60,
+                    60
+                );
+            }
         });
         
         // document.getElementById('status').innerHTML = `Detected ${markers.length} marker(s)`;
     }
+}
+
+// Helper function to check if a point is inside a marker
+function isPointInMarker(point, marker, margin = 100) {
+    // Implementation of point-in-polygon algorithm
+    let inside = false;
+    
+    // Clone corners array and add first corner at the end to close the loop
+    // const corners = [...enlargedCorners, enlargedCorners[0]];
+    const corners = [...marker.corners, marker.corners[0]];
+    
+    for (let i = 0; i < corners.length - 1; i++) {
+        const c1 = corners[i];
+        const c2 = corners[i + 1];
+        
+        // Check if point is on a corner
+        if ((point.x === c1.x && point.y === c1.y) || (point.x === c2.x && point.y === c2.y)) {
+            return true;
+        }
+        
+        // Check if point is between corners vertically
+        if ((c1.y > point.y) !== (c2.y > point.y)) {
+            // Calculate x-intersection of the line with horizontal line at point.y
+            const xIntersection = (c2.x - c1.x) * (point.y - c1.y) / (c2.y - c1.y) + c1.x;
+            
+            // Check if point is on horizontal line and the x-intersection
+            if (point.x === xIntersection) {
+                return true;
+            }
+            
+            // Check if point is to the left of the line
+            if (point.x < xIntersection) {
+                inside = !inside;
+            }
+        }
+    }
+
+    if (inside) {
+        // Check if marker centre is inside crosshair corners
+        return inside
+    }
+
+    // check if marker centre is inside croshshairCorners
+    const center = getMarkerCenter(marker);
+
+    const size = Math.min(canvasOutput.width, canvasOutput.height) * 0.07;
+
+    // get crosshair corners 
+    const crosshairCorners = [
+        { x: point.x - size, y: point.y - size },
+        { x: point.x + size, y: point.y - size },
+        { x: point.x + size, y: point.y + size },
+        { x: point.x - size, y: point.y + size },
+        { x: point.x - size, y: point.y - size } ]
+
+    for (let i = 0; i < crosshairCorners.length - 1; i++) {
+        const c1 = crosshairCorners[i];
+        const c2 = crosshairCorners[i + 1];
+        
+        // Check if center is on a corner
+        if ((center.x === c1.x && center.y === c1.y) || (center.x === c2.x && center.y === c2.y)) {
+            return true;
+        }
+        
+        // Check if point is between corners vertically
+        if ((c1.y > center.y) !== (c2.y > center.y)) {
+            // Calculate x-intersection of the line with horizontal line at point.y
+            const xIntersection = (c2.x - c1.x) * (center.y - c1.y) / (c2.y - c1.y) + c1.x;
+            
+            // Check if point is on horizontal line and the x-intersection
+            if (center.x === xIntersection) {
+                return true;
+            }
+            
+            // Check if point is to the left of the line
+            if (center.x < xIntersection) {
+                inside = !inside;
+            }
+        }
+    }
+    
+    return inside;
 }
 
 // Helper function to convert HSV to RGB (keep your existing function)
@@ -252,9 +395,9 @@ function getMarkerCenter(marker) {
 
 
 
-// Handle shoot button click
+// Handle shoot button click - UPDATED
 shootBtn.addEventListener('click', function() {
-    if (currentTarget) {
+    if (targetInCrosshair) {
         // Visual feedback
         shootBtn.classList.add('active');
         setTimeout(() => shootBtn.classList.remove('active'), 200);
@@ -263,14 +406,14 @@ shootBtn.addEventListener('click', function() {
         playLaserSound();
         
         // Send hit event to server
-        socket.emit('hit', currentTarget.playerId);
+        socket.emit('hit', targetInCrosshair.playerId);
         
         // Show hit confirmation
-        showHitConfirmation(currentTarget.center.x, currentTarget.center.y);
+        showHitConfirmation(targetInCrosshair.center.x, targetInCrosshair.center.y);
         
-        statusMessage.textContent = `Shot fired at player ${currentTarget.playerId}!`;
+        statusMessage.textContent = `Shot fired at player ${targetInCrosshair.playerId}!`;
     } else {
-        statusMessage.textContent = 'No target detected!';
+        statusMessage.textContent = 'No target in crosshair!';
     }
 });
 
@@ -279,24 +422,6 @@ const sounds = {
     laser: new Audio('sound/laser.mp3'),
     hit: new Audio('sound/hit.mp3')
 };
-
-// Preload and configure sounds
-sounds.laser.volume = 0.4;
-sounds.hit.volume = 0.6;
-
-// Play laser sound effect
-function playLaserSound() {
-    // Clone the audio to allow for rapid firing
-    const sound = sounds.laser.cloneNode();
-    sound.play().catch(e => console.log('Sound play error:', e));
-}
-
-// Play hit sound effect
-function playHitSound() {
-    // Clone the audio to allow for overlapping sounds
-    const sound = sounds.hit.cloneNode();
-    sound.play().catch(e => console.log('Sound play error:', e));
-}
 
 // Show hit confirmation animation
 function showHitConfirmation(x, y) {
@@ -318,6 +443,26 @@ function showHitConfirmation(x, y) {
         }
     }, 800);
 }
+
+// Preload and configure sounds
+sounds.laser.volume = 0.4;
+sounds.hit.volume = 0.6;
+
+// Play laser sound effect
+function playLaserSound() {
+    // Clone the audio to allow for rapid firing
+    const sound = sounds.laser.cloneNode();
+    sound.play().catch(e => console.log('Sound play error:', e));
+}
+
+// Play hit sound effect
+function playHitSound() {
+    // Clone the audio to allow for overlapping sounds
+    const sound = sounds.hit.cloneNode();
+    sound.play().catch(e => console.log('Sound play error:', e));
+}
+
+
 
 
 
