@@ -1,0 +1,36 @@
+.security-warning {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    background-color: #ff5722;
+    color: white;
+    padding: 15px;
+    z-index: 1000;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.security-warning h3 {
+    margin-top: 0;
+}
+
+.security-warning ul {
+    text-align: left;
+    display: inline-block;
+}
+
+.security-warning button {
+    background-color: white;
+    color: #ff5722;
+    border: none;
+    padding: 8px 16px;
+    margin-top: 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.security-warning button:hover {
+    background-color: #f0f0f0;
+}

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArUco Marker Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1, h2 {
+            text-align: center;
+        }
+        
+        .marker-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            margin: 30px 0;
+        }
+        
+        .marker {
+            border: 1px solid #ccc;
+            padding: 15px;
+            text-align: center;
+            page-break-inside: avoid;
+        }
+        
+        .marker-id {
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        canvas {
+            border: 1px solid #eee;
+        }
+        
+        .options {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .options label {
+            display: inline-block;
+            margin-right: 15px;
+        }
+        
+        button {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        
+        .print-instructions {
+            margin-top: 40px;
+            padding: 15px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        @media print {
+            .options, .print-instructions, button {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>ArUco Marker Generator</h1>
+    
+    <div class="options">
+        <h2>Options</h2>
+        <div>
+            <label>
+                Dictionary:
+                <select id="dictionary">
+                    <option value="DICT_4X4_50">4×4 (50 markers)</option>
+                    <option value="DICT_5X5_50">5×5 (50 markers)</option>
+                    <option value="DICT_6X6_50" selected>6×6 (50 markers)</option>
+                    <option value="DICT_7X7_50">7×7 (50 markers)</option>
+                </select>
+            </label>
+            
+            <label>
+                Marker Size (px):
+                <input type="number" id="markerSize" value="200" min="100" max="1000" step="50">
+            </label>
+            
+            <label>
+                Border Size:
+                <input type="number" id="borderSize" value="1" min="1" max="5">
+            </label>
+        </div>
+        
+        <div>
+            <label>
+                Start ID:
+                <input type="number" id="startId" value="0" min="0" max="49">
+            </label>
+            
+            <label>
+                Number of Markers:
+                <input type="number" id="markerCount" value="6" min="1" max="50">
+            </label>
+        </div>
+        
+        <button id="generateBtn">Generate Markers</button>
+        <button id="printBtn">Print Markers</button>
+    </div>
+    
+    <div class="marker-container" id="markerContainer">
+        <!-- Markers will be generated here -->
+        <p>Click "Generate Markers" to create ArUco markers</p>
+    </div>
+    
+    <div class="print-instructions">
+        <h2>Instructions:</h2>
+        <ol>
+            <li>Generate the markers using the options above</li>
+            <li>Click "Print Markers" or use your browser's print function</li>
+            <li>Print on high-quality paper for best results</li>
+            <li>Cut out each marker, keeping the black border intact</li>
+            <li>Attach markers to players (using safety pins or tape)</li>
+        </ol>
+        <p><strong>Note:</strong> For best detection, ensure markers are flat, well-lit, and have no glare.</p>
+    </div>
+    
+    <!-- Add script for OpenCV.js -->
+    <script async src="../public/js/opencv.js" onload="onOpenCVReady();" type="text/javascript"></script>
+    
+    <script>
+        let cv = null;
+        
+        function onOpenCVReady() {
+            cv = window.cv;
+            document.getElementById('generateBtn').disabled = false;
+            console.log('OpenCV.js is ready!');
+        }
+        
+        document.getElementById('generateBtn').addEventListener('click', generateMarkers);
+        document.getElementById('printBtn').addEventListener('click', () => window.print());
+        
+        function generateMarkers() {
+            if (!cv) {
+                alert('OpenCV.js is not loaded yet. Please wait a moment and try again.');
+                return;
+            }
+            
+            const dictionary = document.getElementById('dictionary').value;
+            const markerSize = parseInt(document.getElementById('markerSize').value);
+            const borderSize = parseInt(document.getElementById('borderSize').value);
+            const startId = parseInt(document.getElementById('startId').value);
+            const markerCount = parseInt(document.getElementById('markerCount').value);
+            
+            const container = document.getElementById('markerContainer');
+            container.innerHTML = '';
+            
+            try {
+                // Create ArUco dictionary
+                const dict = getDictionary(dictionary);
+                
+                // Generate each marker
+                for (let i = 0; i < markerCount; i++) {
+                    const id = startId + i;
+                    if (id >= dict.bytesList.rows) {
+                        alert(`Maximum marker ID for this dictionary is ${dict.bytesList.rows - 1}`);
+                        break;
+                    }
+                    
+                    // Create marker element
+                    const markerElement = document.createElement('div');
+                    markerElement.className = 'marker';
+                    
+                    // Create canvas for marker
+                    const canvas = document.createElement('canvas');
+                    canvas.width = markerSize;
+                    canvas.height = markerSize;
+                    markerElement.appendChild(canvas);
+                    
+                    // Add ID label
+                    const label = document.createElement('div');
+                    label.className = 'marker-id';
+                    label.textContent = `Marker ID: ${id}`;
+                    markerElement.appendChild(label);
+                    
+                    container.appendChild(markerElement);
+                    
+                    // Draw marker on canvas
+                    drawMarker(dict, id, markerSize, canvas, borderSize);
+                }
+            } catch (error) {
+                console.error('Error generating markers:', error);
+                container.innerHTML = `<p>Error generating markers: ${error.message}</p>`;
+            }
+        }
+        
+        function getDictionary(dictionaryName) {
+            switch (dictionaryName) {
+                case 'DICT_4X4_50':
+                    return new cv.aruco_Dictionary(cv.DICT_4X4_50);
+                case 'DICT_5X5_50':
+                    return new cv.aruco_Dictionary(cv.DICT_5X5_50);
+                case 'DICT_6X6_50':
+                    return new cv.aruco_Dictionary(cv.DICT_6X6_50);
+                case 'DICT_7X7_50':
+                    return new cv.aruco_Dictionary(cv.DICT_7X7_50);
+                default:
+                    return new cv.aruco_Dictionary(cv.DICT_6X6_50);
+            }
+        }
+        
+        function drawMarker(dictionary, id, size, canvas, borderSize = 1) {
+            try {
+                // Create marker image
+                const markerImage = new cv.Mat();
+                cv.drawMarker(dictionary, id, size, markerImage, borderSize);
+                
+                // Draw on canvas
+                const ctx = canvas.getContext('2d');
+                
+                // Create ImageData from cv.Mat
+                const imgData = new ImageData(
+                    new Uint8ClampedArray(markerImage.data),
+                    markerImage.cols,
+                    markerImage.rows
+                );
+                
+                ctx.putImageData(imgData, 0, 0);
+                
+                // Clean up
+                markerImage.delete();
+            } catch (error) {
+                console.error(`Error drawing marker ${id}:`, error);
+                
+                // Fallback: Draw a simple pattern
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, size, size);
+                ctx.strokeStyle = 'black';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(0, 0, size, size);
+                
+                // Draw error message
+                ctx.fillStyle = 'red';
+                ctx.font = '14px Arial';
+                ctx.fillText('Error drawing marker', 20, size/2);
+                ctx.fillText(`ID: ${id}`, 20, size/2 + 20);
+            }
+        }
+    </script>
+</body>
+</html>
