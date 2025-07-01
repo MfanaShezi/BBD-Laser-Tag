@@ -224,20 +224,28 @@ function getMarkerCenter(marker) {
     };
 }
 
-// Helper function to get additional information for specific marker IDs
-function getMarkerInfo(markerId) {
-    // You can customize this with your own marker meanings
-    const markerInfo = {
-        0: "Robot Start Position",
-        1: "Navigation Point A",
-        2: "Navigation Point B",
-        3: "Goal Location",
-        4: "Obstacle",
-        // Add more marker IDs and their meanings as needed
-    };
+// // Helper function to get additional information for specific marker IDs
+// function getMarkerInfo(markerId) {
+//     // You can customize this with your own marker meanings
+//     const markerInfo = {
+//         0: "Robot Start Position",
+//         1: "Navigation Point A",
+//         2: "Navigation Point B",
+//         3: "Goal Location",
+//         4: "Obstacle",
+//         // Add more marker IDs and their meanings as needed
+//     };
     
-    return markerInfo[markerId] || "Custom Marker";
-}
+//     return markerInfo[markerId] || "Custom Marker";
+// }
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////////////// Unknow??n
+
 
 
 
