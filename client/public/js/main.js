@@ -22,26 +22,25 @@ let canvasProcessing = null;
 let streaming = false;
 let detector = null;
 
-const urlParams = new URLSearchParams(window.location.search);
-const playerId = urlParams.get('playerId');
-const roomId = urlParams.get('roomId');
+let urlParams = new URLSearchParams(window.location.search);
+let playerId = urlParams.get('playerId');
+let roomId = urlParams.get('roomId');
 
 function onLoad() {
-    // Create AR detector with ARUCO_MIP_36h12 dictionary (better detection than standard ARUCO)
-    // const urlParams = new URLSearchParams(window.location.search);
-    // player.id = urlParams.get('playerId');
-    // player.name = urlParams.get('playerName') || `Player ${player.id  || ''}`;
-    // player.roomId = urlParams.get('roomId');
-    // room.id = player.roomId;
-    // player.team = urlParams.get('team') || 'default';  
-
-    // socket.emit('joinRoom', { roomId: player.roomId, player:player});
+    // console.log("Loading game");
+    // if (player) {
+    //     console.log("Player already exists:", player);
+    //     socket.emit("requestPlayerId", {playerName: player.name});
+    // }
     socket.emit("requestRoomInfo", {roomId: roomId});
     
     detector = new AR.Detector({ 
-        dictionaryName: 'ARUCO_MIP_36h12',
+        dictionaryName: 'ARUCO',
         maxHammingDistance: 7 // Balance between detection accuracy and sensitivity
     });    
+
+    startGameTimer();
+
     startCamera();
 }
 
@@ -228,8 +227,8 @@ shootBtn.addEventListener('click', function() {
         shootBtn.classList.add('active');
         setTimeout(() => shootBtn.classList.remove('active'), 200);
         
-        if (player.health <= 0 && targetInCrosshair.id != 10) return;
-        if (player.health > 0 && targetInCrosshair.id == 10) return; // Don't shoot at yourself if alive
+        if (player.health <= 0 && nonPlayerQrs[targetInCrosshair.id] !== 'respawn') return;
+        if (player.health > 0 && nonPlayerQrs[targetInCrosshair.id] == 'respawn') return; // Don't shoot at yourself if alive
         if (targetInCrosshair.player.health <= 0) return; // Don't shoot if target is already dead
         // Send hit event to server
         socket.emit('hit', {'roomId': player.roomId, 'playerShootingId': player.id, 'playerHitId':targetInCrosshair.player.id});
@@ -258,7 +257,9 @@ shootBtn.addEventListener('click', function() {
 // Sound effects
 const sounds = {
     laser: new Audio('sound/laser.mp3'),
-    hit: new Audio('sound/hit.mp3')
+    hit: new Audio('sound/hit.mp3'),
+    submachineGun: new Audio('sound/submachine.mp3'),
+    guncock: new Audio('sound/guncock.mp3')
 };
 
 // Preload and configure sounds
@@ -268,8 +269,12 @@ sounds.hit.volume = 0.6;
 // Play laser sound effect
 function playLaserSound() {
     // Clone the audio to allow for rapid firing
-    const sound = sounds.laser.cloneNode();
+    const sound = sounds.submachineGun.cloneNode();
+    const guncock = sounds.guncock.cloneNode();
     sound.play().catch(e => console.log('Sound play error:', e));
+    setTimeout(() => {
+        guncock.play().catch(e => console.log('Sound play error:', e));
+    },500);
 }
 
 // Play hit sound effect
@@ -342,22 +347,241 @@ socket.on('roomError', (message) => {
 //     // console.log(player);
 // });
 
+// socket.on('gameOver', (data) => {
+
+//     stopGameTimer();
+    
+//     const winner = data.winner;
+//     const roomId = data.roomId;
+
+//     if (room.id === roomId) {
+//         alert(`Game Over! Player ${winner.name} wins with ${winner.kills} kills!`);
+//         // Optionally redirect or reset the game
+//         window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}`; // Redirect to room selection
+//     }
+// });
+
 socket.on('gameOver', (data) => {
+    stopGameTimer();
+
     const winner = data.winner;
     const roomId = data.roomId;
 
     if (room.id === roomId) {
-        alert(`Game Over! Player ${winner.name} wins with ${winner.kills} kills!`);
-        // Optionally redirect or reset the game
-        window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}`; // Redirect to room selection
+        // Show the modal
+        document.getElementById('game-over-modal').classList.remove('hidden');
+        document.getElementById('game-over-message').textContent = `Player ${winner.name} wins with ${winner.kills} kills!`;
+
+        // Button action
+        document.getElementById('return-button').onclick = () => {
+            window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}`;
+        };
     }
 });
+
 socket.on('sendRoomInfo', (localRoom) => {
     console.log("Gets Here 0");
     if (localRoom.id !== roomId) return;
 
     room = structuredClone(localRoom);
     player = structuredClone(localRoom.players[playerId]);
+
+    updatePlayerUI();
     console.log("Gets Here 1");
     console.log(player);
 });
+
+// socket.on("nukeRoom", (roomId) => {
+//     if (roomId !== player.roomId) return;
+//     console.log("Nuking room in client:", roomId);
+//     room = null;
+//     player = null;
+// });
+
+
+// Add this function to main.js
+function updatePlayerUI() {
+    // Check if player object exists
+    if (!player) return;
+    
+    // Update kills
+    const playerScoreElement = document.getElementById('playerScore');
+    if (playerScoreElement) {
+        playerScoreElement.textContent = `Kills: ${player.kills || 0}`;
+    }
+    
+    // Update deaths
+    const playerDeathsElement = document.getElementById('playerDeaths');
+    if (playerDeathsElement) {
+        playerDeathsElement.textContent = `Deaths: ${player.deaths || 0}`;
+    }
+    
+    // Update damage
+    const playerDamageElement = document.getElementById('playerDamage');
+    if (playerDamageElement) {
+        playerDamageElement.textContent = `Damage: ${player.damage || 1}`;
+    }
+    
+    // Update health bar
+    updateHealthBar(player.health || 0);
+}
+
+// Function to update the health bar
+function updateHealthBar(health) {
+    const healthSegments = document.querySelectorAll('.life-segment');
+    
+    if (healthSegments.length === 0) return;
+    
+    // Set the maximum health (number of segments)
+    const maxHealth = healthSegments.length;
+    
+    // Ensure health is within valid range
+    health = Math.max(0, Math.min(health, maxHealth));
+    
+    // Update each segment based on current health
+    healthSegments.forEach((segment, index) => {
+        if (index < health) {
+            segment.style.background = '#ff4081'; // Active health segment
+        } else {
+            segment.style.background = '#444'; // Inactive health segment
+        }
+    });
+}
+
+// Add this to your socket event handlers in main.js
+socket.on("mysteryBoxHit", (data) => {
+    if (data.playerId === player.id) {
+        // Update player stats based on the effect
+        player = structuredClone(room.players[player.id]);
+        
+        // Show effect notification
+        showMysteryBoxEffect(data.message);
+        
+        // Update UI
+        updatePlayerUI();
+    } else {
+        // Show notification that another player hit a mystery box
+        showGameNotification(`${data.playerName} hit a mystery box: ${data.message}`);
+    }
+});
+
+// Function to display mystery box effect notification
+function showMysteryBoxEffect(message) {
+    // Create effect overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'mystery-effect-overlay';
+    
+    // Create content
+    const content = document.createElement('div');
+    content.className = 'mystery-effect-content';
+    
+    // Create icon based on effect
+    const icon = document.createElement('div');
+    icon.className = 'mystery-effect-icon';
+    
+    // Use icon based on effect message
+    if (message.includes('health')) {
+        if (message.includes('Gained')) {
+            icon.innerHTML = '❤️';
+            icon.classList.add('health-up');
+        } else {
+            icon.innerHTML = '💔';
+            icon.classList.add('health-down');
+        }
+    } else if (message.includes('damage')) {
+        if (message.includes('doubled')) {
+            icon.innerHTML = '⚡';
+            icon.classList.add('damage-up');
+        } else {
+            icon.innerHTML = '🔽';
+            icon.classList.add('damage-down');
+        }
+    }
+    
+    // Create message
+    const messageElement = document.createElement('div');
+    messageElement.className = 'mystery-effect-message';
+    messageElement.textContent = `MYSTERY BOX: ${message}!`;
+    
+    // Assemble elements
+    content.appendChild(icon);
+    content.appendChild(messageElement);
+    overlay.appendChild(content);
+    
+    // Add to document
+    document.body.appendChild(overlay);
+    
+    // Play sound effect
+    const mysterySound = new Audio('sound/mystery-box.mp3');
+    mysterySound.play().catch(e => console.log('Sound play error:', e));
+    
+    // Remove after animation
+    setTimeout(() => {
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+            document.body.removeChild(overlay);
+        }, 500);
+    }, 2500);
+}
+
+// Generic notification function
+function showGameNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'game-notification';
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                document.body.removeChild(notification);
+            }
+        }, 500);
+    }, 3000);
+}
+
+// Global timer variables
+let gameTimerInterval;
+let gameSeconds = 0;
+
+// Function to start the game timer
+function startGameTimer() {
+    // Reset timer if it exists
+    if (gameTimerInterval) {
+        clearInterval(gameTimerInterval);
+        gameSeconds = 0;
+    }
+    
+    // Update the timer display immediately
+    updateTimerDisplay();
+    
+    // Start the interval to update every second
+    gameTimerInterval = setInterval(() => {
+        gameSeconds++;
+        updateTimerDisplay();
+    }, 1000);
+}
+
+// Function to update the timer display
+function updateTimerDisplay() {
+    const minutes = Math.floor(gameSeconds / 60);
+    const seconds = gameSeconds % 60;
+    
+    // Format with leading zeros
+    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    // Update the display
+    const timeDisplay = document.getElementById('timeDisplay');
+    if (timeDisplay) {
+        timeDisplay.textContent = formattedTime;
+    }
+}
+
+// Optional: Function to stop the timer if ever needed
+function stopGameTimer() {
+    if (gameTimerInterval) {
+        clearInterval(gameTimerInterval);
+    }
+}
