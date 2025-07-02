@@ -257,7 +257,9 @@ shootBtn.addEventListener('click', function() {
 // Sound effects
 const sounds = {
     laser: new Audio('sound/laser.mp3'),
-    hit: new Audio('sound/hit.mp3')
+    hit: new Audio('sound/hit.mp3'),
+    submachineGun: new Audio('sound/submachine.mp3'),
+    guncock: new Audio('sound/guncock.mp3')
 };
 
 // Preload and configure sounds
@@ -267,8 +269,12 @@ sounds.hit.volume = 0.6;
 // Play laser sound effect
 function playLaserSound() {
     // Clone the audio to allow for rapid firing
-    const sound = sounds.laser.cloneNode();
+    const sound = sounds.submachineGun.cloneNode();
+    const guncock = sounds.guncock.cloneNode();
     sound.play().catch(e => console.log('Sound play error:', e));
+    setTimeout(() => {
+        guncock.play().catch(e => console.log('Sound play error:', e));
+    },500);
 }
 
 // Play hit sound effect
