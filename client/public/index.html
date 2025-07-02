@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laser Tag Game</title>
     <style>
+        @import url('https://fonts.googleapis.com/css?family=Orbitron:700&display=swap');
+        @import url('https://fonts.googleapis.com/css?family=Montserrat:700&display=swap');
+
+        [id^="orbitron-"] {
+            font-family: 'Orbitron', Arial, sans-serif;
+        }
+
+        #orbitron-h3 {
+            color: black;
+            margin: 0;
+            text-shadow:
+                0 0 2px #ff0000,
+                0 0 4px #ff0000,
+                0 0 6px #ff0000,
+                0 0 8px #ff0000;
+        }
+
         body {
             font-family: Arial, sans-serif;
             background-color: #121212;
@@ -19,25 +36,36 @@
             text-align: center;
         }
 
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
-            border: none;
-            border-radius: 5px;
-            background-color: #ff4081;
-            color: #fff;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-
         button:hover {   
             background-color: #e03570;
         }
 
         #startBtn {
-            box-shadow: 0 0 0 10px transparent;
-            outline: 2px dotted red;
-            outline-offset: 10px;
+            position: relative;
+
+            padding: 15px 60px; /* Increased width */
+            font-size: 10px;
+            border: none;
+            border-radius: 0;
+            background-color: #ff4081;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-family: 'Montserrat', Arial, sans-serif;
+            z-index: 1;
+        }
+
+        #startBtn::after {
+            content: "";
+            position: absolute;
+            pointer-events: none;
+            left: 20px;   /* Increase for more right offset */
+            top: 20px;    /* Increase for more bottom offset */
+            right: -20px;
+            bottom: -20px;
+            border: 2px dotted red;
+            border-radius: 0;
+            z-index: 0;
         }
     </style>
 </head>
@@ -45,11 +73,11 @@
     <div class="container">
         <h1 id="orbitron-h1">LASER</h1>
 
-        <h3>TAG</h3>
+        <h3 id="orbitron-h3">TAG</h3>
         <p>
-            <img src="/images/laser-tag-logo.png" alt="Laser Tag Logo" style="width: 200px; height: auto;">
+            <img src="img/halo.png" alt="Laser Tag Logo" style="width: 200px; height: auto;">
         </p>
-        <button id="startBtn" onclick="startGame()">Start</button>
+        <button id="startBtn" onclick="startGame()">START</button>
     </div>
 
     <script>
