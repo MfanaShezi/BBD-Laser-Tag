@@ -133,6 +133,74 @@
             from { opacity: 0; transform: translateY(40px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+         /* modal styles */
+         .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #ff4081;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 0 20px #ff4081;
+            animation: slideUp 0.5s ease;
+        }
+
+        .modal-content h2 {
+            color: #ff4081;
+            margin-bottom: 15px;
+            text-shadow: 0 0 10px #ff4081;
+        }
+
+        .modal-content p {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .modal-content button {
+            padding: 12px 24px;
+            background: #ff4081;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 10px #ff4081, 0 0 20px #ff4081;
+        }
+
+        .modal-content button:hover {
+            transform: scale(1.1);
+            background-color: #e03570;
+            box-shadow: 0 0 15px #ff4081, 0 0 30px #ff4081;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -156,6 +224,14 @@
     
 
     <div id="return-to-lobby"></div>
+     <!-- modal -->
+     <div id="game-over-modal" class="modal hidden">
+        <div class="modal-content">
+            <h2 id="game-over-title">Game Over!</h2>
+            <p id="game-over-message"></p>
+            <button id="return-button">Ok</button>
+        </div>
+    </div>
 </body>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -226,8 +302,21 @@
     });
 
     socket.on("gameOver", (data) => {
-        
-    });
+    const winner = data.winner;
+
+    if (data.roomId === roomId) {
+        const modal = document.getElementById('game-over-modal');
+        // Show the modal
+        document.getElementById('game-over-modal').classList.remove('hidden');
+        document.getElementById('game-over-message').textContent = `Player ${winner.name} wins with ${winner.kills} kills!`;
+
+        // Button action
+        document.getElementById('return-button').onclick = () => {
+            modal.classList.add('hidden'); 
+ 
+        };
+    }
+});
 
 </script>
 </html>

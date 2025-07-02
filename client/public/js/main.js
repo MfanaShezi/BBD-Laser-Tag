@@ -341,19 +341,38 @@ socket.on('roomError', (message) => {
 //     // console.log(player);
 // });
 
-socket.on('gameOver', (data) => {
+// socket.on('gameOver', (data) => {
 
-    stopGameTimer();
+//     stopGameTimer();
     
+//     const winner = data.winner;
+//     const roomId = data.roomId;
+
+//     if (room.id === roomId) {
+//         alert(`Game Over! Player ${winner.name} wins with ${winner.kills} kills!`);
+//         // Optionally redirect or reset the game
+//         window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}`; // Redirect to room selection
+//     }
+// });
+
+socket.on('gameOver', (data) => {
+    stopGameTimer();
+
     const winner = data.winner;
     const roomId = data.roomId;
 
     if (room.id === roomId) {
-        alert(`Game Over! Player ${winner.name} wins with ${winner.kills} kills!`);
-        // Optionally redirect or reset the game
-        window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}`; // Redirect to room selection
+        // Show the modal
+        document.getElementById('game-over-modal').classList.remove('hidden');
+        document.getElementById('game-over-message').textContent = `Player ${winner.name} wins with ${winner.kills} kills!`;
+
+        // Button action
+        document.getElementById('return-button').onclick = () => {
+            window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}`;
+        };
     }
 });
+
 socket.on('sendRoomInfo', (localRoom) => {
     console.log("Gets Here 0");
     if (localRoom.id !== roomId) return;

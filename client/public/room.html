@@ -127,7 +127,7 @@
 
         <input type="text" id="roomNameInput" placeholder="Enter Room Name" maxlength="5" >
         <div class="button-group">
-            <button onclick="createRoom('single')">Create Single Player Room</button>
+            <button onclick="createRoom('single')">Create Player Room</button>
             <!-- <button onclick="createRoom('team')">Create Team Room</button> -->
         </div>
 
@@ -177,7 +177,7 @@
 
         // Handle room creation success
         socket.on('roomCreated', (room) => {
-            alert(`Room "${room.name}" created successfully!`);
+            // alert(`Room "${room.name}" created successfully!`);
             updateRoomList();
         });
 
