@@ -36,8 +36,6 @@ app.get('/playerCreation', (req, res) => res.sendFile(path.join(__dirname, '../c
 app.get('/room', (req, res) => res.sendFile(path.join(__dirname, '../client/public/room.html')));
 
 
-
-
 // WebSocket logic
 io.on('connection', (socket) => {
     console.log('A user connected:', socket.id);
@@ -50,7 +48,7 @@ io.on('connection', (socket) => {
         }
 
         const roomId = (Math.random() + 1).toString(36).substring(2);
-        rooms[roomId] = { id: roomId, name, mode, players: [], spectators: [] };
+        rooms[roomId] = { id: roomId, name, mode, players: {}, spectators: [], qrsUsed: [] };
 
         console.log(`Room created: ${name} (ID: ${roomId}, Mode: ${mode})`);
         socket.emit('roomCreated', rooms[roomId]);
@@ -58,7 +56,21 @@ io.on('connection', (socket) => {
     });
 
     socket.on("joinRoom", (data) => {
-        rooms[data.roomId].players.push(data.playerId);
+        // rooms[data.roomId].players.push(data.playerId);
+        rooms[data.roomId].players[data.player.id] = data.player;
+        
+        for (let i = 0; i < 200; i++) {
+            // Bug 1: Using square brackets with includes (it's a method, not an array index)
+            // Bug 2: Not checking if the QR ID is already in use properly
+            if (!rooms[data.roomId].qrsUsed.includes(i)) {
+                rooms[data.roomId].players[data.player.id].qrId = i;
+                rooms[data.roomId].qrsUsed.push(i); // Bug 3: Using square brackets with push
+                break;
+            }
+        }
+
+        // emit the updated room info to all clients
+        io.emit("roomInfoUpdated", { roomId: data.roomId, players: rooms[data.roomId].players})
     });
 
     socket.on("spectateRoom", (data) => {
@@ -100,6 +112,18 @@ io.on('connection', (socket) => {
         // console.log("room roomId");
         // console.log(rooms[data.roomId]);
         socket.emit("sendRoomInfo", {room: rooms[data.roomId], players: players});
+    });
+
+    socket.on("hit", (data) => {
+        const playerId = data.id;
+        const roomId = data.roomId;
+        console.log(rooms);
+        rooms[roomId].players[playerId].health -= 1;
+
+        socket.emit("roomInfoUpdated", {
+            roomId: roomId,
+            players: rooms[roomId].players
+        });
     });
 });
 

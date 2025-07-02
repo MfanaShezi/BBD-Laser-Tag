@@ -94,49 +94,10 @@
     <script src="js/cv.js"></script>
     <script src="js/aruco.js"></script>
     <script src="js/marker-detector.js"></script>
-    <script src="js/main.js" onload="onLoad()"></script>
+    <script src="js/main.js"></script>
     <script>
-        const socket = io();
-
-        
-        // Extract the roomId from the URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const roomId = urlParams.get('roomId');
-
-        if (roomId) {
-            socket.emit('joinRoom', { roomId, role: 'player' });
-        } else {
-            alert('Room ID is missing!');
-            window.location.href = '/room.html';
-        }
-
-        // Fetch room details from the server
-        socket.emit('getRoomDetails', { roomId });
-
-        // Handle room details response
-        socket.on('roomDetails', (room) => {
-            const roomInfo = document.getElementById('roomInfo');
-            const teamButtons = document.getElementById('teamButtons');
-
-            if (room.mode === 'single') {
-                roomInfo.textContent = `You have joined the single-player room: ${room.name}`;
-                teamButtons.style.display = 'none'; // Hide team buttons for single-player mode
-            } else if (room.mode === 'team') {
-                roomInfo.textContent = `You have joined the team room: ${room.name}`;
-                teamButtons.style.display = 'block'; // Show team buttons for team mode
-            }
-        });
-
-        // Handle errors
-        socket.on('roomError', (message) => {
-            alert(message);
-            window.location.href = '/room.html'; // Redirect back to room selection
-        });
-
-        // Join a team
-        function joinTeam(teamName) {
-            socket.emit('joinTeam', { roomId, teamName });
-        }
+        // Call onLoad when the page is ready
+        document.addEventListener('DOMContentLoaded', onLoad);
     </script>
     
 </body>
