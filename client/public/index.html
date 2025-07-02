@@ -33,17 +33,23 @@
         button:hover {
             background-color: #e03570;
         }
+
+        #startBtn {
+            box-shadow: 0 0 0 10px transparent;
+            outline: 2px dotted red;
+            outline-offset: 4px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to Laser Tag Game</h1>
+        <h1 id="orbitron-h1">LASER</h1>
+
+        <h3>TAG</h3>
         <p>
-            Experience the thrill of Laser Tag in a virtual environment! 
-            Create or join rooms, team up with friends, and compete to score the highest points. 
-            Get ready for an action-packed adventure!
+            <img src="/images/laser-tag-logo.png" alt="Laser Tag Logo" style="width: 200px; height: auto;">
         </p>
-        <button onclick="startGame()">Start Game</button>
+        <button id="startBtn" onclick="startGame()">Start</button>
     </div>
 
     <script>
