@@ -4,10 +4,6 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
-import https from 'https';
-import os from 'os';
-import QRCode from 'qrcode';
-import fs from 'fs';
 
 // Define __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -185,79 +181,16 @@ io.on('connection', (socket) => {
     });
 });
 
-function getLocalIP() {
-  const interfaces = os.networkInterfaces();
-  for (const iface of Object.values(interfaces)) {
-      for (const details of iface) {
-          if (details.family === 'IPv4' && !details.internal && details.address.startsWith('192.168.46.')) {
-              return details.address;
-          }
-      }
-  }
-  return '127.0.0.1';
-}
 
-// Generate QR code for easy access
-function generateQRCode(url) {
-  const qrPath = path.join(__dirname, 'qr.png');
-  
-  QRCode.toFile(qrPath, url, {
-    errorCorrectionLevel: 'H',
-    margin: 1,
-    scale: 8,
-    color: {
-      dark: '#000000',
-      light: '#ffffff'
-    }
-  }, (err) => {
-    if (err) {
-      console.error('Error generating QR code:', err);
-    } else {
-      console.log('QR code generated successfully at /qr.png');
-    }
-  });
 
-  // Also generate the QR code as a data URL for console display
-  QRCode.toString(url, {
-    type: 'terminal',
-    errorCorrectionLevel: 'L',
-    small: true
-  }, (err, qrString) => {
-    if (!err) {
-      console.log('\nScan this QR code to join the game:');
-      console.log(qrString);
-    }
-  });
-}
 
 // Start the HTTPS server
 httpServer.listen(PORT,'0.0.0.0', () => {
-  // const ip = getLocalIP();
-  // const url = `https://${ip}:${PORT}`;
-
+  
   const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
-
 
   console.log(`Server is running ${PORT}`);
 
-  // Generate QR code for the HTTPS URL
-  //generateQRCode(url);
-
-  // Also create a text file with the HTTPS URL for easy sharing
-  //fs.writeFileSync(path.join(__dirname, 'game-url.txt'), url);
-  
 });
 
-// Start the HTTP server
-// httpServer.listen(PORT, () => {
-//   const ip = getLocalIP();
-//   console.log(`Local IP Address: ${ip}`);
-//   const url = `http://${ip}:${PORT}`;
 
-//   console.log(`Server is running on http://localhost:${PORT}`);
-
-//   // Generate QR code for the URL
-//   generateQRCode(url);
-//   // Also create a text file with the URL for easy sharing
-//   fs.writeFileSync(path.join(__dirname, 'game-url.txt'), url);
-// });
