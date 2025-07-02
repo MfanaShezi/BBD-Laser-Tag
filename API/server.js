@@ -8,6 +8,7 @@ import https from 'https';
 import os from 'os';
 import QRCode from 'qrcode';
 import fs from 'fs';
+import { start } from 'repl';
 
 // Define __dirname for ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -15,6 +16,7 @@ const __dirname = path.dirname(__filename);
 
 const nonPlayerQrs = {10: 'respawn', 11: 'mysteryBox'}
 const killsForWin = 5;
+const startHealth = 5; // Default health for players
 
 // Load environment variables from .env file
 dotenv.config();
@@ -133,7 +135,7 @@ io.on('connection', (socket) => {
         players[playerId] = {
             id: playerId,
             name: data.playerName,
-            health: 5,
+            health: startHealth,
             qrId: null,
             roomId: null,
             score: 0,
@@ -155,7 +157,10 @@ io.on('connection', (socket) => {
       const playerShootingId = data.playerShootingId;
       const roomId = data.playerHit.roomId;
       if (nonPlayerQrs[data.playerHit.qrId] === 'respawn') {
-
+        console.log(rooms[roomId]);
+        if (rooms[roomId].players[playerShootingId].health <= 0) {
+          rooms[roomId].players[playerShootingId].health = startHealth;
+        }
       } else if (nonPlayerQrs[data.playerHit.qrId] === 'mysteryBox') {
 
       } else {

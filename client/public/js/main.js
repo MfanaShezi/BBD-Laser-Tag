@@ -64,23 +64,62 @@ function startCamera() {
     
     video.addEventListener('canplay', function() {
         if (!streaming) {
-            // Set video and canvas dimensions
-            //const width = Math.min(700, video.videoWidth);
-            //const height = Math.min(480, video.videoHeight);
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            
-            video.setAttribute('width', width);
-            video.setAttribute('height', height);
-            canvasOutput.setAttribute('width', width);
-            canvasOutput.setAttribute('height', height);
-            canvasProcessing.width = width;
-            canvasProcessing.height = height;
-            
-            streaming = true;
-            setTimeout(processVideo, 1000); // Start processing after a short delay
-        }
+        // Get video dimensions from the actual video stream
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+        
+        // Get window dimensions
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+        
+        // Set dimensions to fill the entire screen
+        // Processing canvas uses native video dimensions for accurate detection
+        canvasProcessing.width = videoWidth;
+        canvasProcessing.height = videoHeight;
+        
+        // Output canvas and video fill the entire screen
+        canvasOutput.width = windowWidth;
+        canvasOutput.height = windowHeight;
+        
+        // Set video element to fill the screen
+        video.style.width = '100vw';
+        video.style.height = '100vh';
+        video.style.objectFit = 'cover'; // This is key - it will cover the entire area
+        video.style.position = 'absolute';
+        video.style.left = '0';
+        video.style.top = '0';
+        
+        // Set canvas element to fill the screen
+        canvasOutput.style.width = '100vw';
+        canvasOutput.style.height = '100vh';
+        canvasOutput.style.position = 'absolute';
+        canvasOutput.style.left = '0';
+        canvasOutput.style.top = '0';
+        
+        streaming = true;
+        setTimeout(processVideo, 1000); // Start processing after a short delay
+    }
     });
+}
+
+// Add this function to map coordinates between processing and output canvases
+function mapCoordinates(point, fromCanvas, toCanvas, sourceRect) {
+    // Source rectangle (sx, sy, sWidth, sHeight) defines the cropped area of the video
+    const { x, y } = point;
+    
+    // Calculate scale factors between the processing canvas and the cropped area
+    const scaleX = sourceRect.sWidth / fromCanvas.width;
+    const scaleY = sourceRect.sHeight / fromCanvas.height;
+    
+    // Adjust for cropping offset
+    const adjustedX = (x - sourceRect.sx) / scaleX;
+    const adjustedY = (y - sourceRect.sy) / scaleY;
+    
+    // Scale to output canvas
+    return {
+        x: (adjustedX / fromCanvas.width) * toCanvas.width,
+        y: (adjustedY / fromCanvas.height) * toCanvas.height
+    };
 }
 
 function processVideo() {
@@ -96,8 +135,43 @@ function processVideo() {
         // Draw the video frame to the processing canvas
         ctxProcessing.drawImage(video, 0, 0, canvasProcessing.width, canvasProcessing.height);
         
+
+        // Calculate dimensions to crop and fill the output canvas
+        const videoWidth = video.videoWidth;
+        const videoHeight = video.videoHeight;
+        const videoAspect = videoWidth / videoHeight;
+        
+        const canvasWidth = canvasOutput.width;
+        const canvasHeight = canvasOutput.height;
+        const canvasAspect = canvasWidth / canvasHeight;
+        
+        // Variables for source cropping
+        let sx = 0, sy = 0, sWidth = videoWidth, sHeight = videoHeight;
+        
+        // Crop the video to match the canvas aspect ratio
+        if (videoAspect > canvasAspect) {
+            // Video is wider than canvas - crop sides
+            sWidth = videoHeight * canvasAspect;
+            sx = (videoWidth - sWidth) / 2;
+        } else if (videoAspect < canvasAspect) {
+            // Video is taller than canvas - crop top/bottom
+            sHeight = videoWidth / canvasAspect;
+            sy = (videoHeight - sHeight) / 2;
+        }
+        
+        const sourceRect = { sx, sy, sWidth, sHeight };
+
+        // Draw the cropped video frame to fill the output canvas
+        ctxOutput.drawImage(
+            video, 
+            sx, sy, sWidth, sHeight,      // Source rectangle (cropped area)
+            0, 0, canvasWidth, canvasHeight   // Destination rectangle (full canvas)
+        );
+
+
+
         // FIRST draw the video frame to the output canvas
-        ctxOutput.drawImage(video, 0, 0, canvasOutput.width, canvasOutput.height);
+        // ctxOutput.drawImage(video, 0, 0, canvasOutput.width, canvasOutput.height);
         
         // Get the image data for marker detection
         const imageData = ctxProcessing.getImageData(0, 0, canvasProcessing.width, canvasProcessing.height);
@@ -107,8 +181,19 @@ function processVideo() {
             const markers = detector.detect(imageData);
             
             if (markers && markers.length > 0) {
-                console.log(`Detected ${markers.length} markers`);
-                targetInCrosshair = processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrosshair, room.players);
+                // console.log(`Detected ${markers.length} markers`);
+                // targetInCrosshair = processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrosshair, room.players);
+                // Map the markers to output canvas coordinates
+                const mappedMarkers = markers.map(marker => {
+                    // Create a new marker object with mapped corners
+                    const mappedMarker = { ...marker };
+                    mappedMarker.corners = marker.corners.map(corner => 
+                        mapCoordinates(corner, canvasProcessing, canvasOutput, sourceRect)
+                    );
+                    return mappedMarker;
+                });
+                
+                targetInCrosshair = processDetectedMarkers(mappedMarkers, ctxOutput, canvasOutput, targetInCrosshair, room.players);
             } else {
                 targetInCrosshair = null;
             }
@@ -134,31 +219,27 @@ function processVideo() {
 // Handle shoot button click - UPDATED
 shootBtn.addEventListener('click', function() {
     if (player.health <= 0) {
-        statusMessage.textContent = 'You are out of health!';
         // TODO
-        return;
+    } else {
+        playLaserSound();
     }
-    playLaserSound();
     if (targetInCrosshair) {
         // Visual feedback
         shootBtn.classList.add('active');
         setTimeout(() => shootBtn.classList.remove('active'), 200);
         
+        if (player.health <= 0 && targetInCrosshair.id != 10) return;
+        if (player.health > 0 && targetInCrosshair.id == 10) return; // Don't shoot at yourself if alive
+        if (targetInCrosshair.player.health <= 0) return; // Don't shoot if target is already dead
         // Send hit event to server
         socket.emit('hit', {'playerShootingId': player.id, 'playerHit':targetInCrosshair.player});
-
         setTimeout(() => {
             playHitSound();
         }, 250);
         
         // Show hit confirmation
         showHitConfirmation(targetInCrosshair.center.x, targetInCrosshair.center.y);
-        
-        statusMessage.textContent = `Shot fired at player ${targetInCrosshair.playerId}!`;
-    } else {
-        // playLaserSound();
-        statusMessage.textContent = 'No target in crosshair!';
-    }
+    } 
     
 });
 
