@@ -34,9 +34,9 @@ let players = {};
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../client/public/index.html')));
 app.get('/playerCreation', (req, res) => res.sendFile(path.join(__dirname, '../client/public/playerCreation.html')));
 app.get('/room', (req, res) => res.sendFile(path.join(__dirname, '../client/public/room.html')));
-
-
-
+app.get('/player', (req, res) => res.sendFile(path.join(__dirname, '../client/public/joinRoomAsPlayer.html')));
+app.get('/spectator', (req, res) => res.sendFile(path.join(__dirname, '../client/public/joinRoomAsSpectator.html')));
+app.get('/lobby', (req, res) => res.sendFile(path.join(__dirname, '../client/public/lobby.html')));
 
 // WebSocket logic
 io.on('connection', (socket) => {
@@ -50,7 +50,7 @@ io.on('connection', (socket) => {
         }
 
         const roomId = (Math.random() + 1).toString(36).substring(2);
-        rooms[roomId] = { id: roomId, name, mode, players: [], spectators: [] };
+        rooms[roomId] = { id: roomId, name, mode, players: [], spectators: [], numReady: 0 };
 
         console.log(`Room created: ${name} (ID: ${roomId}, Mode: ${mode})`);
         socket.emit('roomCreated', rooms[roomId]);
@@ -59,10 +59,14 @@ io.on('connection', (socket) => {
 
     socket.on("joinRoom", (data) => {
         rooms[data.roomId].players.push(data.playerId);
+
+        io.emit("sendRoomInfo", {room: rooms[data.roomId], players: players});
     });
 
     socket.on("spectateRoom", (data) => {
         rooms[data.roomId].spectators.push(data.spectatorId);
+
+        io.emit("sendRoomInfo", {room: rooms[data.roomId], players: players});
     });
 
     // Handle fetching rooms
@@ -76,6 +80,18 @@ io.on('connection', (socket) => {
         console.log('A user disconnected:', socket.id);
     });
 
+    socket.on("playerReady", (data) => {
+        io.emit("playerReadyServer", data);
+        rooms[data.roomId].numReady++;
+        if (rooms[data.roomId].numReady == rooms[data.roomId].players.length) {
+            io.emit("allPlayersReady", ({roomId: data.roomId}));
+        }
+    });
+
+    socket.on("playerUnready", (data) => {
+        io.emit("playerUnreadyServer", data);
+        rooms[data.roomId].numReady--;
+    });
 
     //Player logic 
 

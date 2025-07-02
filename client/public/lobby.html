@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Join Room as Player</title>
+    <title>Lobby</title>
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/security-warning.css">
     <style>
@@ -71,9 +71,16 @@
 </head>
 <body>
     
-    <h2 id="main-title">Spectating:</h2>
+    <h2 id="main-title">Room:</h2>
 
-    <ul id="player-list">Players:</ul>
+    <button id="ready-btn">Ready</button>
+    
+    <h2>Players</h2>
+    <ul id="player-list"></ul>
+
+    <h2>Spectators</h2>
+    <ul id="spectator-list"></ul>
+
 
 </body>
 
@@ -84,12 +91,45 @@
     const urlParams = new URLSearchParams(window.location.search);
     const playerId = urlParams.get('playerId');
     const roomId = urlParams.get('roomId');
+    const role = urlParams.get('role');
 
     console.log(roomId);
 
-    document.getElementById("main-title").text = "Spectating: " + roomId;
+    document.getElementById("main-title").textContent = `Room: ${roomId}`;
+
+    document.getElementById("ready-btn").addEventListener("click", () => {
+        if (document.getElementById("ready-btn").textContent == "Ready") {
+            document.getElementById("ready-btn").textContent = "Not Ready"
+            socket.emit("playerReady", {roomId: roomId, playerId: playerId});
+        } else {
+            document.getElementById("ready-btn").textContent = "Ready"
+            socket.emit("playerUnready", {roomId: roomId, playerId: playerId});
+        }
+    });
 
     socket.emit("requestRoomInfo", {roomId: roomId});
+
+    socket.on("playerReadyServer", (data) => {
+        if (data.roomId == roomId) {
+            document.getElementById(`ready-${data.playerId}`).textContent = "Ready";
+        }
+    });
+
+    socket.on("playerUnreadyServer", (data) => {
+        if (data.roomId == roomId) {
+            document.getElementById(`ready-${data.playerId}`).textContent = "Not Ready";
+        }
+    });
+
+    socket.on("allPlayersReady", (data) => {
+        if (data.roomId == roomId) {
+            if (role == "spectator") {
+                window.location.href = `/specatator?playerId=${playerId}&roomId=${roomId}&role=spectator`;
+            } else {
+                window.location.href = `/player?playerId=${playerId}&roomId=${roomId}&role=player`;
+            }
+        }
+    });
 
     socket.on("sendRoomInfo", (data) => {
         if (data.room.id == roomId){
@@ -97,11 +137,26 @@
 
             for (let i = 0; i < data.room.players.length; i++) {
                 playerListString += `
-                    <li id="${data.room.players[i]}">${data.players[data.room.players[i]].name}</li>
+                    <li id="${data.room.players[i]}">
+                        <div class="player-name-div">${data.players[data.room.players[i]].name}</div>
+                        <div id="ready-${data.room.players[i]}" class="player-ready-div">Not Ready</div>
+                    </li>   
                 `
             }
 
             document.getElementById("player-list").innerHTML = playerListString;
+
+            let spectatorListString = "";
+
+            for (let i = 0; i < data.room.spectators.length; i++) {
+                spectatorListString += `
+                    <li id="${data.room.spectators[i]}">
+                        <div class="player-name-div">${data.players[data.room.spectators[i]].name}</div>
+                    </li>
+                `
+            }
+
+            document.getElementById("spectator-list").innerHTML = spectatorListString;
         }
         
     });

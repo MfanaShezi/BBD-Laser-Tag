@@ -118,14 +118,14 @@
         function joinRoomAsPlayer(roomId) {
             socket.emit("joinRoom", {roomId: roomId, playerId: playerId});
 
-            window.location.href = `/JoinRoomAsPlayer.html?playerId=${playerId}&roomId=${roomId}`;
+            window.location.href = `/lobby?playerId=${playerId}&roomId=${roomId}&role=player`;
         }
 
         // Join a room as a spectator
         function joinRoomAsSpectator(roomId) {
             socket.emit("spectateRoom", {roomId: roomId, spectatorId: playerId});
 
-            window.location.href = `/JoinRoomAsSpectator.html?playerId=${playerId}&roomId=${roomId}`;
+            window.location.href = `/lobby?playerId=${playerId}&roomId=${roomId}&role=spectator`;
         }
 
         // Handle room creation success
