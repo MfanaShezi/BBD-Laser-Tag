@@ -128,7 +128,7 @@
         <input type="text" id="roomNameInput" placeholder="Enter Room Name">
         <div class="button-group">
             <button onclick="createRoom('single')">Create Single Player Room</button>
-            <button onclick="createRoom('team')">Create Team Room</button>
+            <!-- <button onclick="createRoom('team')">Create Team Room</button> -->
         </div>
 
         <div class="room-list" id="singlePlayerRooms">
@@ -137,7 +137,7 @@
         </div>
 
         <div class="room-list" id="teamRooms">
-            <h2>Team Rooms</h2>
+            <!-- <h2>Team Rooms</h2> -->
             <!-- Team rooms will be dynamically added here -->
         </div>
     </div>
@@ -197,7 +197,7 @@
             const teamRooms = document.getElementById('teamRooms');
 
             singlePlayerRooms.innerHTML = '<h2>Single Player Rooms</h2>';
-            teamRooms.innerHTML = '<h2>Team Rooms</h2>';
+            // teamRooms.innerHTML = '<h2>Team Rooms</h2>';
 
             rooms.forEach((room) => {
                 const roomItem = document.createElement('div');

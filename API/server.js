@@ -14,8 +14,8 @@ import { start } from 'repl';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const nonPlayerQrs = {10: 'respawn', 11: 'mysteryBox'}
-const killsForWin = 5;
+const nonPlayerQrs = {10: 'respawn', 11: 'respawn', 12: 'respawn', 13: 'respawn', 14: 'mysteryBox', 15: 'mysteryBox', 16: 'mysteryBox', 17: 'mysteryBox', 18: 'mysteryBox', 19: 'mysteryBox'};
+const killsForWin = 3;
 const startHealth = 5; // Default health for players
 
 // Load environment variables from .env file
@@ -75,7 +75,26 @@ io.on('connection', (socket) => {
     });
 
     socket.on("joinRoom", (data) => {
-        // rooms[data.roomId].players.push(data.playerId);
+        // Initialize players object if it doesn't exist
+        if (!rooms[data.roomId].players) {
+            rooms[data.roomId].players = {};
+        }
+        
+        // Check if player exists, create if not
+        if (!players[data.playerId]) {
+            players[data.playerId] = {
+                id: data.playerId,
+                name: data.playerName || 'Player_' + data.playerId.substring(0, 5),
+                health: startHealth,
+                qrId: null,
+                roomId: null,
+                kills: 0,
+                deaths: 0,
+                damage: 1
+            };
+        }
+    
+      
         rooms[data.roomId].players[data.playerId] = players[data.playerId];
         rooms[data.roomId].players[data.playerId].roomId = data.roomId;
         
@@ -158,13 +177,28 @@ io.on('connection', (socket) => {
       const playerHitId = data.playerHitId;
       const playerShootingId = data.playerShootingId;
       const roomId = data.roomId;
+      console.log(`Player ${playerShootingId} hit player ${playerHitId} in room ${roomId}`);
       if (nonPlayerQrs[playerHitId] === 'respawn') {
         if (rooms[roomId].players[playerShootingId].health <= 0) {
           rooms[roomId].players[playerShootingId].health = startHealth;
           rooms[roomId].players[playerShootingId].damage = 1; // Reset QR ID on respawn
         }
       } else if (nonPlayerQrs[playerHitId] === 'mysteryBox') {
-
+          if (rooms[roomId].players[playerShootingId].health > 0) { 
+          // Apply random effect to the player who shot the mystery box
+            const result = mysteryBoxEffect(rooms[roomId].players[playerShootingId], roomId);
+            
+            // Notify all clients about the mystery box effect
+            io.emit("mysteryBoxHit", {
+                playerId: playerShootingId,
+                playerName: rooms[roomId].players[playerShootingId].name,
+                effect: result.effect,
+                message: result.message,
+                roomId: roomId
+            });
+            
+            console.log(`Mystery box effect: ${result.message} for player ${rooms[roomId].players[playerShootingId].name}`);
+          }
       } else {
         // console.log(rooms);
         if (rooms[roomId].players[playerHitId].health <= 0) {
@@ -185,7 +219,6 @@ io.on('connection', (socket) => {
               roomId: roomId
             });
             rooms[roomId].ended = true;
-            // roomsEndState[roomId] = {roomId: roomId, players: rooms[roomId].players};
             io.emit("sendRoomInfo", rooms[roomId]);
           }
         }
@@ -199,7 +232,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on("nukeRoom", (roomId) => {
+      console.log("Nuking room:", roomId);
       delete rooms[roomId];
+      for (const playerId in players) {
+        if (players[playerId].roomId === roomId) {
+          delete players[playerId];
+        }
+      }
+      io.emit("nukeRoom", roomId);
     });
 });
 
@@ -275,3 +315,39 @@ httpsServer.listen(PORT, () => {
 //   // Also create a text file with the URL for easy sharing
 //   fs.writeFileSync(path.join(__dirname, 'game-url.txt'), url);
 // });
+
+// Add this function at the top level of your server.js file
+function mysteryBoxEffect(player, roomId) {
+    // Generate a random number between 0 and 3 to select an effect
+    const effect = Math.floor(Math.random() * 4);
+    
+    let effectMessage = "";
+    
+    switch (effect) {
+        case 0: // Lose 1 health
+            player.health = Math.max(1, player.health - 1); // Don't let health drop below 1
+            effectMessage = "Lost 1 health";
+            break;
+            
+        case 1: // Gain 1 health
+            player.health = Math.min(startHealth, player.health + 1); // Don't exceed max health
+            effectMessage = "Gained 1 health";
+            break;
+            
+        case 2: // Halve damage
+            player.damage = Math.max(0.25, player.damage / 2); // Minimum 0.5 damage
+            effectMessage = "Damage halved";
+            break;
+            
+        case 3: // Double damage
+            player.damage = Math.min(8, player.damage * 2); // Maximum 4x damage
+            effectMessage = "Damage doubled";
+            break;
+    }
+    
+    return {
+        player: player,
+        effect: effect,
+        message: effectMessage
+    };
+}
