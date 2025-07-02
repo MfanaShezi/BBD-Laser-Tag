@@ -13,6 +13,9 @@ import fs from 'fs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+const nonPlayerQrs = {10: 'respawn', 11: 'mysteryBox'}
+const killsForWin = 5;
+
 // Load environment variables from .env file
 dotenv.config();
 
@@ -82,7 +85,7 @@ io.on('connection', (socket) => {
         }
 
         // emit the updated room info to all clients
-        io.emit("roomInfoUpdated", { roomId: data.roomId, players: rooms[data.roomId].players})
+        io.emit("sendRoomInfo", rooms[data.roomId])
     });
 
     socket.on("spectateRoom", (data) => {
@@ -118,19 +121,36 @@ io.on('connection', (socket) => {
     socket.on("requestRoomInfo", (data) => {
       console.log("Sending room info for room:", data.roomId);
       console.log("Room details:", rooms[data.roomId]);
-        socket.emit("sendRoomInfo", {room: rooms[data.roomId], players: players});
+        socket.emit("sendRoomInfo", rooms[data.roomId]);
     });
 
     socket.on("hit", (data) => {
-        const playerId = data.id;
-        const roomId = data.roomId;
-        console.log(rooms);
-        rooms[roomId].players[playerId].health -= 1;
+      const playerHitId = data.playerHit.id;
+      const playerShootingId = data.playerShootingId;
+      const roomId = data.playerHit.roomId;
+      if (nonPlayerQrs[data.playerHit.qrId] === 'respawn') {
 
-        socket.emit("roomInfoUpdated", {
-            roomId: roomId,
-            players: rooms[roomId].players
-        });
+      } else if (nonPlayerQrs[data.playerHit.qrId] === 'mysteryBox') {
+
+      } else {
+        // console.log(rooms);
+        if (rooms[roomId].players[playerHitId].health <= 0) {
+          rooms[roomId].players[playerHitId].health = 0;
+        } else {
+          rooms[roomId].players[playerHitId].health -= 1;
+          if (playerHitId !== playerShootingId) {
+            rooms[roomId].players[playerShootingId].kills += 1;
+          }
+          if (rooms[roomId].players[playerShootingId].kills >= killsForWin) {
+            io.emit("gameOver", {
+              winner: rooms[roomId].players[playerShootingId],
+              roomId: roomId
+            });
+          }
+        }
+      }
+
+      io.emit("sendRoomInfo", rooms[roomId]);
     });
 });
 

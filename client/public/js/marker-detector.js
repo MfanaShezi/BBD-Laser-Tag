@@ -1,3 +1,5 @@
+const nonPlayerQrs = {10: 'respawn', 11: 'mysteryBox'}
+
 // Helper function to draw crosshair in the center of the canvas
 function drawCrosshair(ctx, canvasOutput, targetInCrosshair) {
     const centerX = canvasOutput.width / 2;
@@ -9,7 +11,7 @@ function drawCrosshair(ctx, canvasOutput, targetInCrosshair) {
     // Change color based on whether there's a target in crosshair
     if (targetInCrosshair) {
         // Red when over a marker
-        ctx.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+        ctx.strokeStyle = 'rgb(255, 255, 0)';
     } else {
         // Black when not over a marker
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
@@ -50,8 +52,10 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
             const center = getMarkerCenter(marker);
             
             // Use different colors based on marker ID
-            const colorHue = (marker.id+1 * 30) % 360;
-            const color = hsvToRgb(colorHue / 360, 1, 1);
+            let colorInfo = getDistinctColor(marker.id);
+            let color = colorInfo.rgb;
+            // let colorHue = (marker.id * 30) % 360;
+            // let color = hsvToRgb(colorHue / 360, 1, 1);
 
             // Get player of marker
             let markerPlayer = null
@@ -60,16 +64,44 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
                 markerPlayer = player;
                 break;
               }
-            }   
+            } 
+
+            let isNonPlayer = false;
+            if (nonPlayerQrs[marker.id] == 'respawn') {
+                markerPlayer = {
+                    id: 'respawn',
+                    name: 'Respawn',
+                    health: 1,
+                    qrId: marker.id
+                };
+                isNonPlayer = true;
+                color = {r: 252, g: 3, b: 198}; // Pink color for respawn
+            } else if (nonPlayerQrs[marker.id] == 'mysteryBox') {
+                markerPlayer = {
+                    id: 'mysteryBox',
+                    name: 'Mystery Box',
+                    health: 1,
+                    qrId: marker.id
+                };
+                isNonPlayer = true;
+                color = {r: 0, g: 255, b: 0}; // Green color for mystery box
+            }
+            
             if (markerPlayer) {
-                drawMarker(ctxOutput, marker);
+            // if (true) {
+
+                drawMarker(ctxOutput, marker, markerPlayer);
                 // Draw marker ID
                 ctxOutput.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
                 ctxOutput.font = '20px Arial';
-                ctxOutput.fillText(`${markerPlayer.name} - ${markerPlayer.health}`, center.x - 20, center.y - 15);
-                
+                if (isNonPlayer) {
+                    ctxOutput.fillText(`${markerPlayer.name}`, center.x - 20, center.y - 30);
+                } else {
+                    ctxOutput.fillText(`${markerPlayer.name}  ${markerPlayer.health}`, center.x - 20, center.y - 30);
+                }
+
                 // Check if center point is inside this marker
-                if (isPointInMarker({x: centerX, y: centerY}, marker)) {
+                if (isPointInMarker({x: centerX, y: centerY}, marker) && markerPlayer.health > 0) {
                     // Store the target marker if center is inside it
                     targetInCrosshair = {
                         id: marker.id,
@@ -79,7 +111,7 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
                     
                     // Highlight the target marker
                     ctxOutput.lineWidth = 6;
-                    ctxOutput.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                    ctxOutput.strokeStyle = 'rgba(255, 255, 0, 0.8)';
                     ctxOutput.strokeRect(
                         center.x - 30,
                         center.y - 30,
@@ -87,7 +119,7 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
                         60
                     );
                 }
-            }
+            } 
     });
         
         // document.getElementById('status').innerHTML = `Detected ${markers.length} marker(s)`;
@@ -130,7 +162,6 @@ function isPointInMarker(point, marker, margin = 100) {
             }
         }
     }
-
     if (inside) {
         // Check if marker centre is inside crosshair corners
         return inside
@@ -204,11 +235,20 @@ function hsvToRgb(h, s, v) {
 }
 
 // Helper function to draw a marker
-function drawMarker(ctx, marker) {
+function drawMarker(ctx, marker, markerPlayer = null) {
     // Use different colors for different marker IDs
-    const colorHue = (marker.id+1 * 30) % 360;
-    const color = hsvToRgb(colorHue / 360, 1, 1);
-    const strokeColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+    // const colorHue = (marker.id * 30) % 360;
+    // const color = hsvToRgb(colorHue / 360, 1, 1);
+    // const strokeColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
+
+    
+    let colorInfo = getDistinctColor(marker.id);
+    if (nonPlayerQrs[marker.id] == "respawn") {
+        colorInfo = {cssColor: 'rgb(252, 3, 198)'}
+    } else if (nonPlayerQrs[marker.id] == "mysteryBox") {
+        colorInfo = {cssColor: 'rgb(0, 255, 0)'}
+    }
+    const strokeColor = colorInfo.cssColor;
     
     // Draw the outline with thicker lines for better visibility
     ctx.lineWidth = 4;
@@ -235,6 +275,39 @@ function drawMarker(ctx, marker) {
         ctx.arc(corner.x, corner.y, 4, 0, 2 * Math.PI);
         ctx.fill();
     });
+}
+
+// Helper function to get distinct colors for different marker IDs
+function getDistinctColor(id) {
+
+    if (id == 3) {
+        id = 249;
+    }
+    // Use a color scheme that maximizes differentiation
+    // This is based on the Golden Ratio to spread colors evenly in the color space
+    const goldenRatioConjugate = 0.618033988749895;
+    
+    // Use a prime-based offset for even better distribution
+    const primeOffset = 0.31;
+    
+    // Create a hash from ID that will be distributed between 0 and 1
+    let h = ((id * goldenRatioConjugate) % 1 + primeOffset) % 1;
+    
+    // Use high saturation and value for distinct colors
+    const s = 0.85 + (id % 3) * 0.05; // Slight variation in saturation (0.85-0.95)
+    const v = 0.85 + (id % 5) * 0.03; // Slight variation in brightness (0.85-0.97)
+    
+    // Convert to RGB
+    const rgb = hsvToRgb(h, s, v);
+    
+    // Return both RGB object and CSS color string
+    return {
+        h: h,
+        s: s,
+        v: v,
+        rgb: rgb,
+        cssColor: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`
+    };
 }
 
 // Helper function to calculate marker center

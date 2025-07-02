@@ -7,7 +7,8 @@ let player = {
     roomId: null,
     team: null,
     score: 0,
-    health: 3
+    health: 3,
+    kills: 0,
 };
 
 let room = {
@@ -136,7 +137,7 @@ shootBtn.addEventListener('click', function() {
         setTimeout(() => shootBtn.classList.remove('active'), 200);
         
         // Send hit event to server
-        socket.emit('hit', targetInCrosshair.player);
+        socket.emit('hit', {'playerShootingId': player.id, 'playerHit':targetInCrosshair.player});
 
         setTimeout(() => {
             playHitSound();
@@ -232,10 +233,21 @@ socket.on('roomError', (message) => {
     window.location.href = '/room.html'; // Redirect back to room selection
 });
 
-socket.on('roomInfoUpdated', (data) => {
-    if (data.roomId !== player.roomId) return;
+socket.on('sendRoomInfo', (sentRoom) => {
+    if (sentRoom.id !== player.roomId) return;
 
-    room.players = data.players;
+    room.players = sentRoom.players;
     player = room.players[player.id];
-    console.log(player);
+    // console.log(player);
+});
+
+socket.on('gameOver', (data) => {
+    const winner = data.winner;
+    const roomId = data.roomId;
+
+    if (room.id === roomId) {
+        alert(`Game Over! Player ${winner.name} wins with ${winner.kills} kills!`);
+        // Optionally redirect or reset the game
+        // window.location.href = '/room.html'; // Redirect to room selection
+    }
 });
