@@ -233,6 +233,18 @@ shootBtn.addEventListener('click', function() {
         if (targetInCrosshair.player.health <= 0) return; // Don't shoot if target is already dead
         // Send hit event to server
         socket.emit('hit', {'roomId': player.roomId, 'playerShootingId': player.id, 'playerHitId':targetInCrosshair.player.id});
+        // socket.emit('hit', {'playerShootingId': player.id, 'playerHit':targetInCrosshair.player});
+
+        // Send Hitframe to Server
+        const video = document.getElementById('videoInput');
+        const canvas = document.getElementById('canvasOutput');
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const frame = canvas.toDataURL('image/jpeg', 0.5);
+        socket.emit('hitFrame', {frame: frame, roomId: roomId});
+
         setTimeout(() => {
             playHitSound();
         }, 250);
@@ -337,7 +349,7 @@ socket.on('gameOver', (data) => {
     if (room.id === roomId) {
         alert(`Game Over! Player ${winner.name} wins with ${winner.kills} kills!`);
         // Optionally redirect or reset the game
-        // window.location.href = '/room.html'; // Redirect to room selection
+        window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}`; // Redirect to room selection
     }
 });
 socket.on('sendRoomInfo', (localRoom) => {

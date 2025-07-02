@@ -67,7 +67,7 @@ io.on('connection', (socket) => {
         }
 
         const roomId = (Math.random() + 1).toString(36).substring(2);
-        rooms[roomId] = { id: roomId, name, mode, players: {}, spectators: {}, qrsUsed: [], numReady: 0 };
+        rooms[roomId] = { id: roomId, name, mode, players: {}, spectators: {}, qrsUsed: [], numReady: 0 , ended: false};
 
         console.log(`Room created: ${name} (ID: ${roomId}, Mode: ${mode})`);
         socket.emit('roomCreated', rooms[roomId]);
@@ -138,7 +138,7 @@ io.on('connection', (socket) => {
             health: startHealth,
             qrId: null,
             roomId: null,
-            score: 0,
+            // score: 0,
             kills: 0,
             deaths: 0,
             damage:1
@@ -171,25 +171,35 @@ io.on('connection', (socket) => {
           rooms[roomId].players[playerHitId].health = 0;
         } else {
           rooms[roomId].players[playerHitId].health -= rooms[roomId].players[playerShootingId].damage;
-          if (rooms[roomId].players[playerHitId].health < 0) {
-            rooms[roomId].players[playerHitId].health = 0;
-          }
-          if (playerHitId !== playerShootingId) {
-            rooms[roomId].players[playerShootingId].kills += 1;
-          }
           if (rooms[roomId].players[playerHitId].health <= 0) {
+            rooms[roomId].players[playerHitId].health = 0;
+            if (playerHitId !== playerShootingId) {
+              rooms[roomId].players[playerShootingId].kills += 1;
+            }
             rooms[roomId].players[playerHitId].deaths += 1;
           }
+
           if (rooms[roomId].players[playerShootingId].kills >= killsForWin) {
             io.emit("gameOver", {
               winner: rooms[roomId].players[playerShootingId],
               roomId: roomId
             });
+            rooms[roomId].ended = true;
+            // roomsEndState[roomId] = {roomId: roomId, players: rooms[roomId].players};
+            io.emit("sendRoomInfo", rooms[roomId]);
           }
         }
       }
 
+      socket.on("hitFrame", (data) => {
+        io.emit("hitFrameFromServer", data);
+      });
+
       io.emit("sendRoomInfo", rooms[roomId]);
+    });
+
+    socket.on("nukeRoom", (roomId) => {
+      delete rooms[roomId];
     });
 });
 

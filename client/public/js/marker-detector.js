@@ -109,7 +109,9 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
                         center: center
                     };
                     if (currentPlayer.health > 0 && marker.id === 10) {
-
+                        // Nothing
+                    } else if (currentPlayer.health <= 0 && marker.id !== 10) { 
+                        //Nothing
                     } else {
                         // Highlight the target marker
                         ctxOutput.lineWidth = 6;
