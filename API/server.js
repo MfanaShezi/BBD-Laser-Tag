@@ -230,7 +230,7 @@ httpsServer.listen(PORT,'0.0.0.0', () => {
   const ip = getLocalIP();
   const url = `https://${ip}:${PORT}`;
 
-  console.log(`Server is running https://localhost:${PORT}`);
+  console.log(`Server is running ${PORT}`);
 
   // Generate QR code for the HTTPS URL
   generateQRCode(url);
