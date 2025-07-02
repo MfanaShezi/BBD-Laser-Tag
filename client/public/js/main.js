@@ -22,18 +22,20 @@ let canvasProcessing = null;
 let streaming = false;
 let detector = null;
 
-const urlParams = new URLSearchParams(window.location.search);
-const playerId = urlParams.get('playerId');
-const roomId = urlParams.get('roomId');
+let urlParams = new URLSearchParams(window.location.search);
+let playerId = urlParams.get('playerId');
+let roomId = urlParams.get('roomId');
 
 function onLoad() {
-    if (player) {
-        socket.emit("requestPlayerId", {playerName: player.name});
-    }
+    // console.log("Loading game");
+    // if (player) {
+    //     console.log("Player already exists:", player);
+    //     socket.emit("requestPlayerId", {playerName: player.name});
+    // }
     socket.emit("requestRoomInfo", {roomId: roomId});
     
     detector = new AR.Detector({ 
-        dictionaryName: 'ARUCO_MIP_36h12',
+        dictionaryName: 'ARUCO',
         maxHammingDistance: 7 // Balance between detection accuracy and sensitivity
     });    
     startCamera();
@@ -222,8 +224,8 @@ shootBtn.addEventListener('click', function() {
         shootBtn.classList.add('active');
         setTimeout(() => shootBtn.classList.remove('active'), 200);
         
-        if (player.health <= 0 && targetInCrosshair.id != 10) return;
-        if (player.health > 0 && targetInCrosshair.id == 10) return; // Don't shoot at yourself if alive
+        if (player.health <= 0 && nonPlayerQrs[targetInCrosshair.id] !== 'respawn') return;
+        if (player.health > 0 && nonPlayerQrs[targetInCrosshair.id] == 'respawn') return; // Don't shoot at yourself if alive
         if (targetInCrosshair.player.health <= 0) return; // Don't shoot if target is already dead
         // Send hit event to server
         socket.emit('hit', {'roomId': player.roomId, 'playerShootingId': player.id, 'playerHitId':targetInCrosshair.player.id});
@@ -352,6 +354,159 @@ socket.on('sendRoomInfo', (localRoom) => {
 
     room = structuredClone(localRoom);
     player = structuredClone(localRoom.players[playerId]);
+
+    updatePlayerUI();
     console.log("Gets Here 1");
     console.log(player);
 });
+
+// socket.on("nukeRoom", (roomId) => {
+//     if (roomId !== player.roomId) return;
+//     console.log("Nuking room in client:", roomId);
+//     room = null;
+//     player = null;
+// });
+
+
+// Add this function to main.js
+function updatePlayerUI() {
+    // Check if player object exists
+    if (!player) return;
+    
+    // Update kills
+    const playerScoreElement = document.getElementById('playerScore');
+    if (playerScoreElement) {
+        playerScoreElement.textContent = `Kills: ${player.kills || 0}`;
+    }
+    
+    // Update deaths
+    const playerDeathsElement = document.getElementById('playerDeaths');
+    if (playerDeathsElement) {
+        playerDeathsElement.textContent = `Deaths: ${player.deaths || 0}`;
+    }
+    
+    // Update damage
+    const playerDamageElement = document.getElementById('playerDamage');
+    if (playerDamageElement) {
+        playerDamageElement.textContent = `Damage: ${player.damage || 1}`;
+    }
+    
+    // Update health bar
+    updateHealthBar(player.health || 0);
+}
+
+// Function to update the health bar
+function updateHealthBar(health) {
+    const healthSegments = document.querySelectorAll('.life-segment');
+    
+    if (healthSegments.length === 0) return;
+    
+    // Set the maximum health (number of segments)
+    const maxHealth = healthSegments.length;
+    
+    // Ensure health is within valid range
+    health = Math.max(0, Math.min(health, maxHealth));
+    
+    // Update each segment based on current health
+    healthSegments.forEach((segment, index) => {
+        if (index < health) {
+            segment.style.background = '#ff4081'; // Active health segment
+        } else {
+            segment.style.background = '#444'; // Inactive health segment
+        }
+    });
+}
+
+// Add this to your socket event handlers in main.js
+socket.on("mysteryBoxHit", (data) => {
+    if (data.playerId === player.id) {
+        // Update player stats based on the effect
+        player = structuredClone(room.players[player.id]);
+        
+        // Show effect notification
+        showMysteryBoxEffect(data.message);
+        
+        // Update UI
+        updatePlayerUI();
+    } else {
+        // Show notification that another player hit a mystery box
+        showGameNotification(`${data.playerName} hit a mystery box: ${data.message}`);
+    }
+});
+
+// Function to display mystery box effect notification
+function showMysteryBoxEffect(message) {
+    // Create effect overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'mystery-effect-overlay';
+    
+    // Create content
+    const content = document.createElement('div');
+    content.className = 'mystery-effect-content';
+    
+    // Create icon based on effect
+    const icon = document.createElement('div');
+    icon.className = 'mystery-effect-icon';
+    
+    // Use icon based on effect message
+    if (message.includes('health')) {
+        if (message.includes('Gained')) {
+            icon.innerHTML = '❤️';
+            icon.classList.add('health-up');
+        } else {
+            icon.innerHTML = '💔';
+            icon.classList.add('health-down');
+        }
+    } else if (message.includes('damage')) {
+        if (message.includes('doubled')) {
+            icon.innerHTML = '⚡';
+            icon.classList.add('damage-up');
+        } else {
+            icon.innerHTML = '🔽';
+            icon.classList.add('damage-down');
+        }
+    }
+    
+    // Create message
+    const messageElement = document.createElement('div');
+    messageElement.className = 'mystery-effect-message';
+    messageElement.textContent = `MYSTERY BOX: ${message}!`;
+    
+    // Assemble elements
+    content.appendChild(icon);
+    content.appendChild(messageElement);
+    overlay.appendChild(content);
+    
+    // Add to document
+    document.body.appendChild(overlay);
+    
+    // Play sound effect
+    const mysterySound = new Audio('sound/mystery-box.mp3');
+    mysterySound.play().catch(e => console.log('Sound play error:', e));
+    
+    // Remove after animation
+    setTimeout(() => {
+        overlay.classList.add('fade-out');
+        setTimeout(() => {
+            document.body.removeChild(overlay);
+        }, 500);
+    }, 2500);
+}
+
+// Generic notification function
+function showGameNotification(message) {
+    const notification = document.createElement('div');
+    notification.className = 'game-notification';
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.classList.add('fade-out');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                document.body.removeChild(notification);
+            }
+        }, 500);
+    }, 3000);
+}

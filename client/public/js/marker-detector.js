@@ -1,4 +1,4 @@
-const nonPlayerQrs = {10: 'respawn', 11: 'mysteryBox'}
+const nonPlayerQrs = {10: 'respawn', 11: 'respawn', 12: 'respawn', 13: 'respawn', 14: 'mysteryBox', 15: 'mysteryBox', 16: 'mysteryBox', 17: 'mysteryBox', 18: 'mysteryBox', 19: 'mysteryBox'};
 
 // Helper function to draw crosshair in the center of the canvas
 function drawCrosshair(ctx, canvasOutput, targetInCrosshair) {
@@ -78,7 +78,7 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
                 color = {r: 252, g: 3, b: 198}; // Pink color for respawn
             } else if (nonPlayerQrs[marker.id] == 'mysteryBox') {
                 markerPlayer = {
-                    id: 'mysteryBox',
+                    id: marker.id,
                     name: 'Mystery Box',
                     health: 1,
                     qrId: marker.id
@@ -108,9 +108,9 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
                         player: markerPlayer, // This should be set elsewhere in your code
                         center: center
                     };
-                    if (currentPlayer.health > 0 && marker.id === 10) {
+                    if (currentPlayer.health > 0 && nonPlayerQrs[marker.id] === 'respawn') {
                         // Nothing
-                    } else if (currentPlayer.health <= 0 && marker.id !== 10) { 
+                    } else if (currentPlayer.health <= 0 && nonPlayerQrs[marker.id] !== 'respawn') { 
                         //Nothing
                     } else {
                         // Highlight the target marker
