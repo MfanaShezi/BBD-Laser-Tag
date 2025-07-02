@@ -226,7 +226,7 @@ function generateQRCode(url) {
 }
 
 // Start the HTTPS server
-httpsServer.listen(PORT, () => {
+httpsServer.listen(PORT,'0.0.0.0', () => {
   const ip = getLocalIP();
   const url = `https://${ip}:${PORT}`;
 
