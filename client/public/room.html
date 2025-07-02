@@ -162,7 +162,11 @@
         }
 
         // Join a room as a player
-        function joinRoomAsPlayer(roomId) {
+        function joinRoomAsPlayer(roomId, playersCount) {
+            if (playersCount >= 10) {
+                alert('Room is full. You can join as a spectator.');
+                return;
+            }
             socket.emit("joinRoom", {roomId: roomId, playerId: playerId});
 
             window.location.href = `/lobby?playerId=${playerId}&roomId=${roomId}&role=player`;
@@ -204,7 +208,7 @@
                 roomItem.className = 'room-item';
                 roomItem.innerHTML = `
                     ${room.name} (ID: ${room.id}, Mode: ${room.mode})
-                    <button onclick="joinRoomAsPlayer('${room.id}')">Join as Player</button>
+                    <button onclick="joinRoomAsPlayer('${room.id}', '${Object.keys(room.players).length}')">Join as Player</button>
                     <button onclick="joinRoomAsSpectator('${room.id}')">Join as Spectator</button>
                 `;
 
