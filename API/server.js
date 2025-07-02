@@ -19,20 +19,25 @@ const killsForWin = 5;
 // Load environment variables from .env file
 dotenv.config();
 
-// Load SSL certificate and private key
-const sslOptions = {
-  key: fs.readFileSync(path.join(__dirname, '192.168.46.52-key.pem')), 
-  cert: fs.readFileSync(path.join(__dirname, '192.168.46.52.pem')), 
-};
+// // Load SSL certificate and private key
+// const sslOptions = {
+//   key: fs.readFileSync(path.join(__dirname, '192.168.46.52-key.pem')), 
+//   cert: fs.readFileSync(path.join(__dirname, '192.168.46.52.pem')), 
+// };
 
 // Initialize Express app
 const app = express();
 
 const PORT = process.env.PORT || 3000;
 
-// Create HTTPS server
-const httpsServer = https.createServer(sslOptions, app);
-const io = new Server(httpsServer);
+// // Create HTTPS server
+// const httpsServer = https.createServer(sslOptions, app);
+// const io = new Server(httpsServer);
+
+//http server
+const httpServer = createServer(app);
+const io = new Server(httpServer);
+
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../client/public')));
@@ -226,17 +231,21 @@ function generateQRCode(url) {
 }
 
 // Start the HTTPS server
-httpsServer.listen(PORT,'0.0.0.0', () => {
-  const ip = getLocalIP();
-  const url = `https://${ip}:${PORT}`;
+httpServer.listen(PORT,'0.0.0.0', () => {
+  // const ip = getLocalIP();
+  // const url = `https://${ip}:${PORT}`;
+
+  const url = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+
 
   console.log(`Server is running ${PORT}`);
 
   // Generate QR code for the HTTPS URL
-  generateQRCode(url);
+  //generateQRCode(url);
 
   // Also create a text file with the HTTPS URL for easy sharing
-  fs.writeFileSync(path.join(__dirname, 'game-url.txt'), url);
+  //fs.writeFileSync(path.join(__dirname, 'game-url.txt'), url);
+  
 });
 
 // Start the HTTP server
