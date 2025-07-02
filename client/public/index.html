@@ -12,7 +12,21 @@
             font-family: 'Orbitron', Arial, sans-serif;
         }
 
+        #orbitron-h1 {
+            font-size: 4em; /* 2x the default 2em for h1 */
+            margin-bottom: 0;
+        }
+
+        hr {
+            margin: 0;
+            border: none;
+            border-top: 2px solid white;
+            width: 100%;
+            max-width: 400px;
+        }
+
         #orbitron-h3 {
+            font-size: 2em; /* 2x the default 1em for h2 */
             color: black;
             margin: 0;
             text-shadow:
@@ -66,13 +80,44 @@
             height: auto;
             /* Match font size if you want text alignment, but usually this div is empty */
         }
+
+        #dottedBox {
+            width: 80px;
+            height: 10px;;
+            border: 2px dotted #ff4081;
+            background: transparent;
+            box-sizing: border-box;
+        }
+
+        .tag-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #redBox {
+            width: 80px;    /* Increased width (2 times the original 40px) */
+            height: 15px;   /* Decreased height (half the original 40px) */
+            background-color: #ff4081;
+            margin-right: 8px; /* 8px gap only after #redBox */
+        }
+        p
+        {
+            margin: 0;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 id="orbitron-h1">LASER</h1>
         <hr>
-        <h3 id="orbitron-h3">TAG</h3>
+        <div class="tag-container">
+            <div id="dottedBox"></div>
+            <div id="redBox"></div>
+            <h2 id="orbitron-h3">TAG</h2>
+        </div>
+        
         <p>
             <img src="img/halo.png" alt="Laser Tag Logo" style="width: 200px; height: auto;">
         </p>
