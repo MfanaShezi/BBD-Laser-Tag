@@ -22,6 +22,7 @@
         .container {
             max-width: 800px;
             padding: 20px;
+            width: 90%;
         }
 
         h1 {
@@ -46,19 +47,32 @@
             margin-bottom: 10px;
         }
 
-        button {
+        .button-group {
+            display: flex;
+            flex-wrap: wrap; /* Ensures buttons wrap on smaller screens */
+            gap: 15px; /* Adds spacing between buttons */
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .button-group button , .room-item button  {
             padding: 10px 20px;
             font-size: 16px;
             border: none;
             border-radius: 5px;
             background-color: #ff4081;
-            color: #fff;
+            color: white;
             cursor: pointer;
             transition: background-color 0.3s ease;
         }
 
-        button:hover {
-            background-color: #e03570;
+        .button-group button:hover {
+            background-color: #e0356e;
+        }
+
+        @media (max-width: 600px) {
+            .button-group button , .room-item button  {
+                width: 100%; 
+            }
         }
 
         .room-list {
@@ -69,20 +83,21 @@
         .room-item {
             margin-bottom: 10px;
         }
-
         .room-item button {
-            margin-left: 10px;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Laser Tag Lobby</h1>
+        <h1>Create Laser Tag Lobby</h1>
         <p>Create or join a room to start playing!</p>
 
         <input type="text" id="roomNameInput" placeholder="Enter Room Name">
-        <button onclick="createRoom('single')">Create Single Player Room</button>
-        <button onclick="createRoom('team')">Create Team Room</button>
+        <div class="button-group">
+            <button onclick="createRoom('single')">Create Single Player Room</button>
+            <button onclick="createRoom('team')">Create Team Room</button>
+        </div>
 
         <div class="room-list" id="singlePlayerRooms">
             <h2>Single Player Rooms</h2>
