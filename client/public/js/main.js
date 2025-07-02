@@ -38,6 +38,9 @@ function onLoad() {
         dictionaryName: 'ARUCO',
         maxHammingDistance: 7 // Balance between detection accuracy and sensitivity
     });    
+
+    startGameTimer();
+
     startCamera();
 }
 
@@ -339,6 +342,9 @@ socket.on('roomError', (message) => {
 // });
 
 socket.on('gameOver', (data) => {
+
+    stopGameTimer();
+    
     const winner = data.winner;
     const roomId = data.roomId;
 
@@ -509,4 +515,48 @@ function showGameNotification(message) {
             }
         }, 500);
     }, 3000);
+}
+
+// Global timer variables
+let gameTimerInterval;
+let gameSeconds = 0;
+
+// Function to start the game timer
+function startGameTimer() {
+    // Reset timer if it exists
+    if (gameTimerInterval) {
+        clearInterval(gameTimerInterval);
+        gameSeconds = 0;
+    }
+    
+    // Update the timer display immediately
+    updateTimerDisplay();
+    
+    // Start the interval to update every second
+    gameTimerInterval = setInterval(() => {
+        gameSeconds++;
+        updateTimerDisplay();
+    }, 1000);
+}
+
+// Function to update the timer display
+function updateTimerDisplay() {
+    const minutes = Math.floor(gameSeconds / 60);
+    const seconds = gameSeconds % 60;
+    
+    // Format with leading zeros
+    const formattedTime = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    // Update the display
+    const timeDisplay = document.getElementById('timeDisplay');
+    if (timeDisplay) {
+        timeDisplay.textContent = formattedTime;
+    }
+}
+
+// Optional: Function to stop the timer if ever needed
+function stopGameTimer() {
+    if (gameTimerInterval) {
+        clearInterval(gameTimerInterval);
+    }
 }
