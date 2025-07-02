@@ -65,8 +65,10 @@ function startCamera() {
     video.addEventListener('canplay', function() {
         if (!streaming) {
             // Set video and canvas dimensions
-            const width = Math.min(640, video.videoWidth);
-            const height = Math.min(480, video.videoHeight);
+            //const width = Math.min(700, video.videoWidth);
+            //const height = Math.min(480, video.videoHeight);
+            const width = window.innerWidth;
+            const height = window.innerHeight;
             
             video.setAttribute('width', width);
             video.setAttribute('height', height);

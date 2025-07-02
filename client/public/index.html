@@ -5,6 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laser Tag Game</title>
     <style>
+        @import url('https://fonts.googleapis.com/css?family=Orbitron:700&display=swap');
+        @import url('https://fonts.googleapis.com/css?family=Montserrat:700&display=swap');
+
+        [id^="orbitron-"] {
+            font-family: 'Orbitron', Arial, sans-serif;
+        }
+
+        #orbitron-h3 {
+            color: black;
+            margin: 0;
+            text-shadow:
+                0 0 2px #ff4081,
+                0 0 4px #ff4081,
+                0 0 6px #ff4081,
+                0 0 8px #ff4081;
+        }
+
         body {
             font-family: Arial, sans-serif;
             background-color: #121212;
@@ -19,32 +36,49 @@
             text-align: center;
         }
 
-        button {
-            padding: 15px 30px;
-            font-size: 18px;
+        button:hover {   
+            background-color: #e03570;
+        }
+
+        #startBtn {
+            padding: 15px 60px;
+            font-size: 10px;
             border: none;
-            border-radius: 5px;
+            border-radius: 0;
             background-color: #ff4081;
             color: #fff;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            font-family: 'Montserrat', Arial, sans-serif;
+            z-index: 0; /* Ensure button is above the dotted border */
         }
 
-        button:hover {
-            background-color: #e03570;
+        #startBtnDotted {
+            position: relative;
+            bottom: 15px; /* 20px above the startBtn's bottom */
+            right: -30px;  /* 20px to the left of the startBtn's right */
+            padding: 15px 60px;
+            border: 2px dotted #ff4081;
+            background: transparent;
+            pointer-events: none;
+            z-index: 0; /* Below the button */
+            box-sizing: border-box;
+            width: auto;
+            height: auto;
+            /* Match font size if you want text alignment, but usually this div is empty */
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Welcome to Laser Tag Game</h1>
+        <h1 id="orbitron-h1">LASER</h1>
+        <hr>
+        <h3 id="orbitron-h3">TAG</h3>
         <p>
-            Experience the thrill of Laser Tag in a virtual environment! 
-            Create or join rooms, team up with friends, and compete to score the highest points. 
-            Get ready for an action-packed adventure!
+            <img src="img/halo.png" alt="Laser Tag Logo" style="width: 200px; height: auto;">
         </p>
-        <button onclick="startGame()">Start Game</button>
+        <button id="startBtn" onclick="startGame()">START</button>
     </div>
+    <div id="startBtnDotted"></div>
 
     <script>
         function startGame() {

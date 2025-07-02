@@ -4,22 +4,90 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Player Creation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .team-buttons {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff4081;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #e03570;
+        }
+
+        input {
+            padding: 12px 16px;
+            font-size: 18px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 250px;
+            margin-top: 10px;
+            background: #222;
+            color: #fff;
+        }
+
+        .player-avatar-container {
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .circular-frame {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            border: 5px solid #fb4483; 
+            object-fit: cover;
+        }
+
+        /* @keyframes moveAvatar {
+            0% { left: 0; }
+            50% { left: calc(100% - 100px); }
+            100% { left: 0; }
+        } */
+    </style>
 </head>
 <body>
+    <div class="player-avatar-container">
+        <img id="player-avatar" src="./img/avatar.png" alt="Player Avatar" class="circular-frame">
+    </div>
     <h1>Enter Player Name</h1>
     <input id="player-name" type="text">
     <br>
     <br>
     <button id="begin-btn">Begin</button>
 </body>
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        const socket = io();
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
 
-        document.getElementById("begin-btn").addEventListener("click", () => {
-            console.log('Gets Here');
-            socket.emit("requestPlayerId", {playerName: document.getElementById("player-name").value});
-        });
+    document.getElementById("begin-btn").addEventListener("click", () => {
+        console.log('Gets Here');
+        socket.emit("requestPlayerId", {playerName: document.getElementById("player-name").value});
+    });
 
         socket.on("sendPlayerId", (data) => {
             window.location.href = `/room?playerId=${data.playerId}`;
