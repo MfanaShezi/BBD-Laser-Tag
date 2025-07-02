@@ -66,13 +66,40 @@
             height: auto;
             /* Match font size if you want text alignment, but usually this div is empty */
         }
+
+        #dottedBox {
+            width: 80px;
+            height: 15px;;
+            border: 2px dotted red;
+            background: transparent;
+            box-sizing: border-box;
+        }
+
+        .tag-container {
+            display: flex;
+            flex-direction: row;
+            align-items: center;
+            justify-content: center;
+            gap: 0; /* No space between children */
+        }
+
+        #redBox {
+            width: 80px;    /* Increased width (2 times the original 40px) */
+            height: 20px;   /* Decreased height (half the original 40px) */
+            background-color: #ff4081;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1 id="orbitron-h1">LASER</h1>
         <hr>
-        <h3 id="orbitron-h3">TAG</h3>
+        <div class="tag-container">
+            <div id="dottedBox"></div>
+            <div id="redBox"></div>
+            <h2 id="orbitron-h3">TAG</h2>
+        </div>
+        
         <p>
             <img src="img/halo.png" alt="Laser Tag Logo" style="width: 200px; height: auto;">
         </p>
