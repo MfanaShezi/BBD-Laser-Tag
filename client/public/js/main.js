@@ -1,22 +1,9 @@
 // Connect to the server
 const socket = io();
-let player = {
-    id: null,
-    name: '',
-    qrId: null,
-    roomId: null,
-    team: null,
-    score: 0,
-    health: 3
-};
 
-let room = {
-    id: null,
-    name: '',
-    mode: 'single', // 'single' or 'team'   
-    players: [],
-    spectators: []
-}
+let player = null;
+
+let room = null;
 
 let targetInCrosshair = null;
 let video = null;
@@ -25,16 +12,21 @@ let canvasProcessing = null;
 let streaming = false;
 let detector = null;
 
+const urlParams = new URLSearchParams(window.location.search);
+const playerId = urlParams.get('playerId');
+const roomId = urlParams.get('roomId');
+
 function onLoad() {
     // Create AR detector with ARUCO_MIP_36h12 dictionary (better detection than standard ARUCO)
-    const urlParams = new URLSearchParams(window.location.search);
-    player.id = urlParams.get('playerId');
-    player.name = urlParams.get('playerName') || `Player ${player.id  || ''}`;
-    player.roomId = urlParams.get('roomId');
-    room.id = player.roomId;
-    player.team = urlParams.get('team') || 'default';  
+    // const urlParams = new URLSearchParams(window.location.search);
+    // player.id = urlParams.get('playerId');
+    // player.name = urlParams.get('playerName') || `Player ${player.id  || ''}`;
+    // player.roomId = urlParams.get('roomId');
+    // room.id = player.roomId;
+    // player.team = urlParams.get('team') || 'default';  
 
-    socket.emit('joinRoom', { roomId: player.roomId, player:player});
+    // socket.emit('joinRoom', { roomId: player.roomId, player:player});
+    socket.emit("requestRoomInfo", {roomId: roomId});
     
     detector = new AR.Detector({ 
         dictionaryName: 'ARUCO_MIP_36h12',
@@ -116,7 +108,7 @@ function processVideo() {
         drawCrosshair(ctxOutput, canvasOutput, targetInCrosshair);
         
         // Calculate and schedule next frame
-        let delay = 1000 / 30 - (Date.now() - begin);
+        let delay = 1000 / 30 - (Date.now() - begin); 
         setTimeout(processVideo, delay > 0 ? delay : 0);
         } catch (err) {
             console.error(err);
@@ -232,10 +224,12 @@ socket.on('roomError', (message) => {
     window.location.href = '/room.html'; // Redirect back to room selection
 });
 
-socket.on('roomInfoUpdated', (data) => {
-    if (data.roomId !== player.roomId) return;
+socket.on('sendRoomInfo', (localRoom) => {
+    console.log("Gets Here 0");
+    if (localRoom.id !== roomId) return;
 
-    room.players = data.players;
-    player = room.players[player.id];
+    room = structuredClone(localRoom);
+    player = structuredClone(localRoom.players[playerId]);
+    console.log("Gets Here 1");
     console.log(player);
 });
