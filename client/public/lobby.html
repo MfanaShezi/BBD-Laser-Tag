@@ -67,21 +67,55 @@
             margin-top: 20px;
             font-size: 18px;
         }
+
+        .lobby-container {
+            width: 90%;
+            max-width: 600px;
+            background-color: rgba(255, 255, 255, 0.1); /* Transparent background */
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            margin: 10px;
+        }
+        .roomtitle-info {
+            width: 90%;
+            max-width: 600px;
+            background-color: rgba(255, 255, 255, 0.1); /* Transparent background */
+            /* border-radius: 10px; */
+            padding: 5px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            margin: 10px;
+        }
+        
+        ul{
+            list-style: none;
+        }
+
+        hr {
+                border: none;
+                border-bottom: 1px solid #444;
+                margin: 20px 0;
+            }
     </style>
 </head>
 <body>
     
-    <h2 id="main-title">Room:</h2>
-
-    <div id="ready-btn-div">
-
+    <div class="roomtitle-info">
+        <h2 id="main-title" style="margin: 15px;">Room:</h2>
     </div>
-    
-    <h2>Players</h2>
-    <ul id="player-list"></ul>
-
-    <h2>Spectators</h2>
-    <ul id="spectator-list"></ul>
+    <div class="lobby-container">
+        <div>
+            <h2 style="margin-bottom: 10px;">Players</h2>
+            <ul id="player-list"></ul>
+        </div>
+        <hr>
+        <div>
+            <h2>Spectators</h2>
+            <ul id="spectator-list"></ul>
+        </div>
+    </div>
+    <div id="ready-btn-div">
+    </div>
 
 
 </body>
@@ -90,6 +124,8 @@
 <script>
     const socket = io();
 
+    let globalRoom=null;
+
     const urlParams = new URLSearchParams(window.location.search);
     const playerId = urlParams.get('playerId');
     const roomId = urlParams.get('roomId');
@@ -97,7 +133,7 @@
 
     console.log(roomId);
 
-    document.getElementById("main-title").textContent = `Room: ${roomId}`;
+    document.getElementById("main-title").textContent = `Room: ${roomId} `;
 
     if (role == "player") {
         document.getElementById("ready-btn-div").innerHTML = `
@@ -140,6 +176,9 @@
 
     socket.on("sendRoomInfo", (room) => {
         if (room.id == roomId){
+            globalRoom = room;
+            document.getElementById("main-title").textContent = `Room: ${globalRoom.name}  roomId:${roomId}`;
+
             let playerListString = "";
 
             let playerKeys = Object.keys(room.players);
@@ -147,8 +186,10 @@
             for (let i = 0; i < playerKeys.length; i++) {
                 playerListString += `
                     <li id="${room.players[playerKeys[i]]}">
-                        <div class="player-name-div">${room.players[playerKeys[i]].name}</div>
-                        <div id="ready-${playerKeys[i]}" class="player-ready-div">Not Ready</div>
+                        <div 
+                            <span class="player-name-div">${room.players[playerKeys[i]].name} -</span>
+                            <span id="ready-${playerKeys[i]}" class="player-ready-div">Not Ready</span
+                         </div>
                     </li>   
                 `
             }
