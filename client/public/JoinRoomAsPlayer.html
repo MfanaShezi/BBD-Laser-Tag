@@ -112,6 +112,28 @@
             box-shadow: 0 4px 16px rgba(0,0,0,0.3);
             opacity: 0.95;
         }
+
+        #lifeBar {
+            display: flex;
+            gap: 0;
+        }
+
+        .player-info {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+
+        .life-segment {
+            width: 20px;
+            height: 12px;
+            background: #ff4081;
+            border-radius: 3px;
+            border: 1px solid #222;
+            transition: background 0.3s;
+        }
+
     </style>
 </head>
 <body>
@@ -120,7 +142,16 @@
         <!-- <p id="roomInfo">Loading room details...</p> -->
         <h1>Laser Tag Game</h1>
             <div class="player-info">
-                <div id="playerScore">Score: 0</div>
+                <div id="lifeBar">
+                    <div class="life-segment"></div>
+                    <div class="life-segment"></div>
+                    <div class="life-segment"></div>
+                    <div class="life-segment"></div>
+                    <div class="life-segment"></div>
+                </div>
+                <div id="playerScore" style="margin: 0; padding: 0;">Score: 0</div>
+                <div id="playerDeaths">Deaths: 0</div>
+                <div id="playerDamage">Damage: 1</div>
             </div>
 
         <div class="team-buttons" id="teamButtons" style="display: none;">
