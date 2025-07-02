@@ -68,6 +68,7 @@ io.on('connection', (socket) => {
 
     socket.on("joinRoom", (data) => {
         rooms[data.roomId].players.push(data.playerId);
+        console.log(`r2 Player ${data.playerId} joined room ${data.roomId}`);
     });
 
     socket.on("spectateRoom", (data) => {
@@ -101,12 +102,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on("requestRoomInfo", (data) => {
-        // console.log("All Rooms");
-        // console.log(rooms);
-        // console.log("Data");
-        // console.log(data);
-        // console.log("room roomId");
-        // console.log(rooms[data.roomId]);
+      console.log("Sending room info for room:", data.roomId);
+      console.log("Room details:", rooms[data.roomId]);
         socket.emit("sendRoomInfo", {room: rooms[data.roomId], players: players});
     });
 });
