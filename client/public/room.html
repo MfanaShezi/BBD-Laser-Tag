@@ -116,7 +116,6 @@
         const urlParams = new URLSearchParams(window.location.search);
 
         const playerId = urlParams.get('playerId');
-        const playerName = urlParams.get('playerName');
         console.log("playerId" + playerId);
         const socket = io();
 
@@ -132,16 +131,16 @@
 
         // Join a room as a player
         function joinRoomAsPlayer(roomId) {
-            // socket.emit("joinRoom", {roomId: roomId, playerId: playerId});
+            socket.emit("joinRoom", {roomId: roomId, playerId: playerId});
 
-            window.location.href = `/JoinRoomAsPlayer.html?playerId=${playerId}&roomId=${roomId}&playerName=${playerName}`;
+            window.location.href = `/lobby?playerId=${playerId}&roomId=${roomId}&role=player`;
         }
 
         // Join a room as a spectator
         function joinRoomAsSpectator(roomId) {
             socket.emit("spectateRoom", {roomId: roomId, spectatorId: playerId});
 
-            window.location.href = `/JoinRoomAsSpectator.html?playerId=${playerId}&roomId=${roomId}&playerName=${playerName}`;
+            window.location.href = `/lobby?playerId=${playerId}&roomId=${roomId}&role=spectator`;
         }
 
         // Handle room creation success
