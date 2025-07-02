@@ -22,7 +22,7 @@
         });
 
         socket.on("sendPlayerId", (data) => {
-            window.location.href = `/room?playerId=${data.playerId}&playerName=${document.getElementById("player-name").value}`;
+            window.location.href = `/room?playerId=${data.playerId}`;
         });
     </script>
 </html>

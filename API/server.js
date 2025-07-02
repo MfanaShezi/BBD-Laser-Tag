@@ -49,7 +49,9 @@ let players = {};
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, '../client/public/index.html')));
 app.get('/playerCreation', (req, res) => res.sendFile(path.join(__dirname, '../client/public/playerCreation.html')));
 app.get('/room', (req, res) => res.sendFile(path.join(__dirname, '../client/public/room.html')));
-
+app.get('/player', (req, res) => res.sendFile(path.join(__dirname, '../client/public/JoinRoomAsPlayer.html')));
+app.get('/spectator', (req, res) => res.sendFile(path.join(__dirname, '../client/public/JoinRoomAsSpectator.html')));
+app.get('/lobby', (req, res) => res.sendFile(path.join(__dirname, '../client/public/lobby.html')));
 
 // WebSocket logic
 io.on('connection', (socket) => {
@@ -63,7 +65,7 @@ io.on('connection', (socket) => {
         }
 
         const roomId = (Math.random() + 1).toString(36).substring(2);
-        rooms[roomId] = { id: roomId, name, mode, players: {}, spectators: [], qrsUsed: [] };
+        rooms[roomId] = { id: roomId, name, mode, players: {}, spectators: {}, qrsUsed: [], numReady: 0 };
 
         console.log(`Room created: ${name} (ID: ${roomId}, Mode: ${mode})`);
         socket.emit('roomCreated', rooms[roomId]);
@@ -72,13 +74,14 @@ io.on('connection', (socket) => {
 
     socket.on("joinRoom", (data) => {
         // rooms[data.roomId].players.push(data.playerId);
-        rooms[data.roomId].players[data.player.id] = data.player;
+        rooms[data.roomId].players[data.playerId] = players[data.playerId];
+        rooms[data.roomId].players[data.playerId].roomId = data.roomId;
         
         for (let i = 0; i < 200; i++) {
             // Bug 1: Using square brackets with includes (it's a method, not an array index)
             // Bug 2: Not checking if the QR ID is already in use properly
             if (!rooms[data.roomId].qrsUsed.includes(i)) {
-                rooms[data.roomId].players[data.player.id].qrId = i;
+                rooms[data.roomId].players[data.playerId].qrId = i;
                 rooms[data.roomId].qrsUsed.push(i); // Bug 3: Using square brackets with push
                 break;
             }
@@ -89,7 +92,10 @@ io.on('connection', (socket) => {
     });
 
     socket.on("spectateRoom", (data) => {
-        rooms[data.roomId].spectators.push(data.spectatorId);
+        rooms[data.roomId].spectators[data.spectatorId] = players[data.spectatorId];
+        rooms[data.roomId].spectators[data.spectatorId].roomId = data.roomId;
+
+        io.emit("sendRoomInfo", rooms[data.roomId])
     });
 
     // Handle fetching rooms
@@ -103,6 +109,20 @@ io.on('connection', (socket) => {
         console.log('A user disconnected:', socket.id);
     });
 
+    socket.on("playerReady", (data) => {
+        io.emit("playerReadyServer", data);
+        rooms[data.roomId].numReady++;
+        if (rooms[data.roomId].numReady == Object.keys(rooms[data.roomId].players).length) {
+            io.emit("allPlayersReady", ({roomId: data.roomId}));
+        }
+    });
+
+    socket.on("playerUnready", (data) => {
+        io.emit("playerUnreadyServer", data);
+        rooms[data.roomId].numReady--;
+    });
+
+
     //Player logic 
 
     socket.on('requestPlayerId', (data) => {
@@ -111,7 +131,13 @@ io.on('connection', (socket) => {
         console.log("Player Id: " + playerId);
 
         players[playerId] = {
-            name: data.playerName
+            id: playerId,
+            name: data.playerName,
+            health: 5,
+            qrId: null,
+            roomId: null,
+            score: 0,
+            kills: 0
         }
 
         console.log(players);
@@ -121,7 +147,7 @@ io.on('connection', (socket) => {
     socket.on("requestRoomInfo", (data) => {
       console.log("Sending room info for room:", data.roomId);
       console.log("Room details:", rooms[data.roomId]);
-        socket.emit("sendRoomInfo", rooms[data.roomId]);
+      socket.emit("sendRoomInfo", rooms[data.roomId]);
     });
 
     socket.on("hit", (data) => {

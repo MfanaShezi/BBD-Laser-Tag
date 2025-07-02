@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lobby</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/security-warning.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #ff4081;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+        }
+
+        p {
+            margin-bottom: 20px;
+            font-size: 18px;
+            line-height: 1.6;
+        }
+
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 400px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff4081;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #e03570;
+        }
+
+        #playerScore {
+            margin-top: 20px;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    
+    <h2 id="main-title">Room:</h2>
+
+    <div id="ready-btn-div">
+
+    </div>
+    
+    <h2>Players</h2>
+    <ul id="player-list"></ul>
+
+    <h2>Spectators</h2>
+    <ul id="spectator-list"></ul>
+
+
+</body>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const playerId = urlParams.get('playerId');
+    const roomId = urlParams.get('roomId');
+    const role = urlParams.get('role');
+
+    console.log(roomId);
+
+    document.getElementById("main-title").textContent = `Room: ${roomId}`;
+
+    if (role == "player") {
+        document.getElementById("ready-btn-div").innerHTML = `
+            <button id="ready-btn">Ready</button>
+        `
+        document.getElementById("ready-btn").addEventListener("click", () => {
+            if (document.getElementById("ready-btn").textContent == "Ready") {
+                document.getElementById("ready-btn").textContent = "Not Ready"
+                socket.emit("playerReady", {roomId: roomId, playerId: playerId});
+            } else {
+                document.getElementById("ready-btn").textContent = "Ready"
+                socket.emit("playerUnready", {roomId: roomId, playerId: playerId});
+            }
+        });
+    }
+
+    socket.emit("requestRoomInfo", {roomId: roomId});
+
+    socket.on("playerReadyServer", (data) => {
+        if (data.roomId == roomId) {
+            document.getElementById(`ready-${data.playerId}`).textContent = "Ready";
+        }
+    });
+
+    socket.on("playerUnreadyServer", (data) => {
+        if (data.roomId == roomId) {
+            document.getElementById(`ready-${data.playerId}`).textContent = "Not Ready";
+        }
+    });
+
+    socket.on("allPlayersReady", (data) => {
+        if (data.roomId == roomId) {
+            if (role == "spectator") {
+                window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}&role=spectator`;
+            } else {
+                window.location.href = `/player?playerId=${playerId}&roomId=${roomId}&role=player`;
+            }
+        }
+    });
+
+    socket.on("sendRoomInfo", (room) => {
+        if (room.id == roomId){
+            let playerListString = "";
+
+            let playerKeys = Object.keys(room.players);
+
+            for (let i = 0; i < playerKeys.length; i++) {
+                playerListString += `
+                    <li id="${room.players[playerKeys[i]]}">
+                        <div class="player-name-div">${room.players[playerKeys[i]].name}</div>
+                        <div id="ready-${playerKeys[i]}" class="player-ready-div">Not Ready</div>
+                    </li>   
+                `
+            }
+
+            document.getElementById("player-list").innerHTML = playerListString;
+
+
+            let spectatorKeys = Object.keys(room.spectators);
+            let spectatorListString = "";
+
+            for (let i = 0; i < spectatorKeys.length; i++) {
+                spectatorListString += `
+                    <li id="${spectatorKeys[i]}">
+                        <div class="player-name-div">${room.spectators[spectatorKeys[i]].name}</div>
+                    </li>
+                `
+            }
+
+            document.getElementById("spectator-list").innerHTML = spectatorListString;
+        }
+        
+    });
+
+</script>
+</html>
