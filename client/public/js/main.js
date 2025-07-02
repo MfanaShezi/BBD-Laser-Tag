@@ -131,6 +131,11 @@ function processVideo() {
 
 // Handle shoot button click - UPDATED
 shootBtn.addEventListener('click', function() {
+    if (player.health <= 0) {
+        statusMessage.textContent = 'You are out of health!';
+        // TODO
+        return;
+    }
     playLaserSound();
     if (targetInCrosshair) {
         // Visual feedback
