@@ -4,27 +4,39 @@ import express from 'express';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import dotenv from 'dotenv';
-
+import https from 'https';
 import os from 'os';
 import QRCode from 'qrcode';
 import fs from 'fs';
 
+// Define __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 // Load environment variables from .env file
 dotenv.config();
 
-const PORT = process.env.PORT || 3000;
+// Load SSL certificate and private key
+const sslOptions = {
+  key: fs.readFileSync(path.join(__dirname, '192.168.46.52-key.pem')), 
+  cert: fs.readFileSync(path.join(__dirname, '192.168.46.52.pem')), 
+};
 
 // Initialize Express app
 const app = express();
 
+const PORT = process.env.PORT || 3000;
+
+// Create HTTPS server
+const httpsServer = https.createServer(sslOptions, app);
+const io = new Server(httpsServer);
+
 // Serve static files
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, '../client/public')));
 
-// Create HTTP server and WebSocket server
-const httpServer = createServer(app);
-const io = new Server(httpServer);
+// // Create HTTP server and WebSocket server
+// const httpServer = createServer(app);
+// const io = new Server(httpServer);
 
 // Data structures
 let rooms = {};
@@ -88,7 +100,6 @@ io.on('connection', (socket) => {
         console.log('A user disconnected:', socket.id);
     });
 
-
     //Player logic 
 
     socket.on('requestPlayerId', (data) => {
@@ -105,12 +116,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on("requestRoomInfo", (data) => {
-        // console.log("All Rooms");
-        // console.log(rooms);
-        // console.log("Data");
-        // console.log(data);
-        // console.log("room roomId");
-        // console.log(rooms[data.roomId]);
+      console.log("Sending room info for room:", data.roomId);
+      console.log("Room details:", rooms[data.roomId]);
         socket.emit("sendRoomInfo", {room: rooms[data.roomId], players: players});
     });
 
@@ -127,31 +134,16 @@ io.on('connection', (socket) => {
     });
 });
 
-// Start the server
-httpServer.listen(PORT, () => {
-    const ip = getLocalIP();
-    const url = `http://${ip}:${PORT}`;
-
-    console.log(`Server is running on http://localhost:${PORT}`);
-
-    // Generate QR code for the URL
-    generateQRCode(url);
-    // Also create a text file with the URL for easy sharing
-    fs.writeFileSync(path.join(__dirname, 'game-url.txt'), url);
-});
-
-// Find the server's local IP address
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
-  for (const iface in interfaces) {
-    for (const details of interfaces[iface]) {
-      // Skip over non-IPv4 and internal (loopback) addresses
-      if (details.family === 'IPv4' && !details.internal) {
-        return details.address;
+  for (const iface of Object.values(interfaces)) {
+      for (const details of iface) {
+          if (details.family === 'IPv4' && !details.internal && details.address.startsWith('192.168.46.')) {
+              return details.address;
+          }
       }
-    }
   }
-  return '127.0.0.1'; // Default to localhost if no external IP found
+  return '127.0.0.1';
 }
 
 // Generate QR code for easy access
@@ -186,3 +178,31 @@ function generateQRCode(url) {
     }
   });
 }
+
+// Start the HTTPS server
+httpsServer.listen(PORT, () => {
+  const ip = getLocalIP();
+  const url = `https://${ip}:${PORT}`;
+
+  console.log(`Server is running https://localhost:${PORT}`);
+
+  // Generate QR code for the HTTPS URL
+  generateQRCode(url);
+
+  // Also create a text file with the HTTPS URL for easy sharing
+  fs.writeFileSync(path.join(__dirname, 'game-url.txt'), url);
+});
+
+// Start the HTTP server
+// httpServer.listen(PORT, () => {
+//   const ip = getLocalIP();
+//   console.log(`Local IP Address: ${ip}`);
+//   const url = `http://${ip}:${PORT}`;
+
+//   console.log(`Server is running on http://localhost:${PORT}`);
+
+//   // Generate QR code for the URL
+//   generateQRCode(url);
+//   // Also create a text file with the URL for easy sharing
+//   fs.writeFileSync(path.join(__dirname, 'game-url.txt'), url);
+// });
