@@ -141,6 +141,7 @@ io.on('connection', (socket) => {
             score: 0,
             kills: 0,
             deaths: 0,
+            damage:1
         }
 
         console.log(players);
@@ -160,6 +161,7 @@ io.on('connection', (socket) => {
       if (nonPlayerQrs[playerHitId] === 'respawn') {
         if (rooms[roomId].players[playerShootingId].health <= 0) {
           rooms[roomId].players[playerShootingId].health = startHealth;
+          rooms[roomId].players[playerShootingId].damage = 1; // Reset QR ID on respawn
         }
       } else if (nonPlayerQrs[playerHitId] === 'mysteryBox') {
 
@@ -168,7 +170,10 @@ io.on('connection', (socket) => {
         if (rooms[roomId].players[playerHitId].health <= 0) {
           rooms[roomId].players[playerHitId].health = 0;
         } else {
-          rooms[roomId].players[playerHitId].health -= 1;
+          rooms[roomId].players[playerHitId].health -= rooms[roomId].players[playerShootingId].damage;
+          if (rooms[roomId].players[playerHitId].health < 0) {
+            rooms[roomId].players[playerHitId].health = 0;
+          }
           if (playerHitId !== playerShootingId) {
             rooms[roomId].players[playerShootingId].kills += 1;
           }
