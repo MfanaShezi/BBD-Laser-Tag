@@ -7,96 +7,6 @@
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/security-warning.css">
     <style>
-        html, body {
-            height: 100%;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-        }
-        body {
-            width: 100vw;
-            height: 100vh;
-            background-color: #121212;
-        }
-        .container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-        }
-        .camera-container {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw;
-            height: 95vh;
-            z-index: 1;
-            overflow: hidden;
-        }
-        #videoInput, #canvasOutput {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: 2;
-        }
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
-            color: #f0f0f0;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            text-align: center;
-        }
-
-        .player-info,
-        .team-buttons,
-        .game-timer {
-            position: absolute;
-            z-index: 5;
-            background: rgba(30,30,30,0.6);
-            border-radius: 10px;
-            padding: 10px 20px;
-            margin: 10px;
-        }
-
-        /* Position each element as desired */
-        .player-info {
-            top: 20px;
-            left: 20px;
-        }
-        .team-buttons {
-            bottom: 120px;
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        .game-timer {
-            top: 10px;
-            right: 10px;
-        }
-         
-        .camera-container {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw;
-            height: 95vh;
-            z-index: 1;
-            overflow: hidden;
-        }
-        #videoInput, #canvasOutput {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100vw;
-            height: 100vh;
-            object-fit: cover;
-            z-index: 2;
-        }
         body {
             font-family: Arial, sans-serif;
             background-color: #121212;
@@ -130,45 +40,31 @@
         button:hover {
             background-color: #e03570;
         }
-
-        #shootBtn.shoot-btn {
-            position: absolute;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 10;
-            padding: 18px 36px;
-            font-size: 22px;
-            background: #ff4081;
-            color: #fff;
-            border: none;
-            border-radius: 50px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.3);
-            opacity: 0.95;
-        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Join Room as Player</h1>
         <!-- <p id="roomInfo">Loading room details...</p> -->
-        <h3>Laser Tag Game</h3>
-
-        <div class="camera-container">
-            <video id="videoInput" autoplay playsinline></video>
-            <canvas id="canvasOutput"></canvas>
+        <h1>Laser Tag Game</h1>
             <div class="player-info">
+                <input type="text" id="playerNameInput" placeholder="Enter your name">
+                <button id="setNameBtn">Set Name</button>
                 <div id="playerScore">Score: 0</div>
             </div>
 
-            <div class="team-buttons" id="teamButtons" style="display: none;">
-                <button onclick="joinTeam('red')">Join Red Team</button>
-                <button onclick="joinTeam('blue')">Join Blue Team</button>
-            </div>
+        <div class="team-buttons" id="teamButtons" style="display: none;">
+            <button onclick="joinTeam('red')">Join Red Team</button>
+            <button onclick="joinTeam('blue')">Join Blue Team</button>
+        </div>
 
-            <div class="game-timer" id="gameTimer">
-                <span id="timeDisplay">5:00</span>
-            </div>
+        <div class="game-timer" id="gameTimer">
+            <span id="timeDisplay">5:00</span>
+        </div>
+    
+        <div class="camera-container">
+            <video id="videoInput" autoplay playsinline></video>
+            <canvas id="canvasOutput"></canvas>
             <div class="targeting-overlay" id="targetingOverlay"></div>
             <div class="respawn-overlay" id="respawnOverlay">
                 <div class="respawn-message">
@@ -176,6 +72,9 @@
                     <p>Respawning in <span id="respawnCounter">5</span> seconds</p>
                 </div>
             </div>
+        </div>
+        
+        <div class="controls">
             <button id="shootBtn" class="shoot-btn">SHOOT</button>
         </div>
         
