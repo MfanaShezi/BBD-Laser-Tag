@@ -176,6 +176,10 @@ io.on('connection', (socket) => {
         }
       }
 
+      socket.on("hitFrame", (data) => {
+        io.emit("hitFrameFromServer", data);
+      });
+
       io.emit("sendRoomInfo", rooms[roomId]);
     });
 });

@@ -147,6 +147,16 @@ shootBtn.addEventListener('click', function() {
         // Send hit event to server
         socket.emit('hit', {'playerShootingId': player.id, 'playerHit':targetInCrosshair.player});
 
+        // Send Hitframe to Server
+        const video = document.getElementById('videoInput');
+        const canvas = document.getElementById('canvasOutput');
+        const ctx = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const frame = canvas.toDataURL('image/jpeg', 0.5);
+        socket.emit('hitFrame', {frame: frame, roomId: roomId});
+
         setTimeout(() => {
             playHitSound();
         }, 250);

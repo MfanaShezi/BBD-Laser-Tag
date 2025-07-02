@@ -73,8 +73,17 @@
     
     <h2 id="main-title">Spectating:</h2>
 
-    <ul id="player-list">Players:</ul>
+    <table id="statistics">
+        <tr>
+            <th>Name</th>
+            <th>Health</th>
+            <th>Kills</th>
+        </tr>
 
+    </table>
+
+    <h2>Last hit</h2>
+    <img id="last-hit-frame" style="width: 100%; max-width: 800px;" />
 </body>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -87,22 +96,44 @@
 
     console.log(roomId);
 
-    document.getElementById("main-title").text = "Spectating: " + roomId;
-
     socket.emit("requestRoomInfo", {roomId: roomId});
 
-    socket.on("sendRoomInfo", (data) => {
+    socket.on("sendRoomInfo", (room) => {
         console.log("Gets Here 1");
-        console.log(data.room);
-        let playerListString = "";
+        document.getElementById("main-title").textContent = "Spectating: " + room.name;
 
-        for (let i = 0; i < data.room.players.length; i++) {
-            playerListString += `
-                <li id="${data.room.players[i]}">${data.players[data.room.players[i]].name}</li>
+        let tableContentString = `
+            <tr>
+                <th>Rank</th>
+                <th>Name</th>
+                <th>Health</th>
+                <th>Kills</th>
+            </tr>
+        `;
+
+        let playerIds = Object.keys(room.players);
+        for (let i = 0; i < playerIds.length; i++) {
+            // playerListString += `
+            //     <li id="${playerIds[i]}">${room.players[playerIds[i]].name}</li>
+            // `
+            tableContentString += `
+                <tr id="${playerIds[i]}">
+                    <td id="name-${playerIds[i]}">${room.players[playerIds[i]].name}</td>
+                    <td id="health-${playerIds[i]}">${room.players[playerIds[i]].health}</td>
+                    <td id="kills-${playerIds[i]}">${room.players[playerIds[i]].kills}</td>
+                </tr>
             `
         }
 
-        document.getElementById("player-list").innerHTML = playerListString;
+        document.getElementById("statistics").innerHTML = tableContentString;
+    });
+
+    socket.on("hitFrameFromServer", (data) => {
+        if (data.roomId == roomId) {
+            const img = document.getElementById('last-hit-frame');
+
+            img.src = data.frame;
+        }
     });
 
 </script>

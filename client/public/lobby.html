@@ -97,8 +97,6 @@
 
     console.log(roomId);
 
-    document.getElementById("main-title").textContent = `Room: ${roomId}`;
-
     if (role == "player") {
         document.getElementById("ready-btn-div").innerHTML = `
             <button id="ready-btn">Ready</button>
@@ -140,9 +138,15 @@
 
     socket.on("sendRoomInfo", (room) => {
         if (room.id == roomId){
-            let playerListString = "";
-
             let playerKeys = Object.keys(room.players);
+
+            if (room.numReady >= playerKeys.length) {
+                window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}&role=spectator`
+            }
+
+            document.getElementById("main-title").textContent = `Room: ${room.name}`;
+
+            let playerListString = "";
 
             for (let i = 0; i < playerKeys.length; i++) {
                 playerListString += `
