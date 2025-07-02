@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const nonPlayerQrs = {10: 'respawn', 11: 'respawn', 12: 'respawn', 13: 'respawn', 14: 'mysteryBox', 15: 'mysteryBox', 16: 'mysteryBox', 17: 'mysteryBox', 18: 'mysteryBox', 19: 'mysteryBox'};
-const killsForWin = 1;
+const killsForWin = 3;
 const startHealth = 5; // Default health for players
 
 // Load environment variables from .env file
