@@ -1,11 +1,22 @@
 // Connect to the server
 const socket = io();
-let currentPlayer = {
+let player = {
     id: null,
     name: '',
+    qrId: null,
+    roomId: null,
+    team: null,
     score: 0,
     health: 3
 };
+
+let room = {
+    id: null,
+    name: '',
+    mode: 'single', // 'single' or 'team'   
+    players: [],
+    spectators: []
+}
 
 let targetInCrosshair = null;
 let video = null;
@@ -16,6 +27,15 @@ let detector = null;
 
 function onLoad() {
     // Create AR detector with ARUCO_MIP_36h12 dictionary (better detection than standard ARUCO)
+    const urlParams = new URLSearchParams(window.location.search);
+    player.id = urlParams.get('playerId');
+    player.name = urlParams.get('playerName') || `Player ${player.id  || ''}`;
+    player.roomId = urlParams.get('roomId');
+    room.id = player.roomId;
+    player.team = urlParams.get('team') || 'default';  
+
+    socket.emit('joinRoom', { roomId: player.roomId, player:player});
+    
     detector = new AR.Detector({ 
         dictionaryName: 'ARUCO_MIP_36h12',
         maxHammingDistance: 7 // Balance between detection accuracy and sensitivity
@@ -27,7 +47,7 @@ function startCamera() {
     console.log('Starting camera...');
     video = document.getElementById('videoInput');
     canvasOutput = document.getElementById('canvasOutput');
-    
+
     // Create hidden canvas for processing
     canvasProcessing = document.createElement('canvas');
     
@@ -86,7 +106,7 @@ function processVideo() {
             
             if (markers && markers.length > 0) {
                 console.log(`Detected ${markers.length} markers`);
-                targetInCrosshair = processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrosshair);
+                targetInCrosshair = processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrosshair, room.players);
             } else {
                 targetInCrosshair = null;
             }
@@ -118,7 +138,7 @@ shootBtn.addEventListener('click', function() {
         setTimeout(() => shootBtn.classList.remove('active'), 200);
         
         // Send hit event to server
-        socket.emit('hit', targetInCrosshair.playerId);
+        socket.emit('hit', targetInCrosshair.player);
 
         setTimeout(() => {
             playHitSound();
@@ -192,3 +212,32 @@ function formatTime(seconds) {
 ///////////////////////////////////////////////////////////////////////////////////////
 
 
+// // Handle room-related socket events
+// socket.on('roomDetails', (room) => {
+//     currentRoom = room;
+//     const roomInfo = document.getElementById('roomInfo');
+//     const teamButtons = document.getElementById('teamButtons');
+
+//     if (roomInfo) {
+//         if (room.mode === 'single') {
+//             roomInfo.textContent = `You have joined the single-player room: ${room.name}`;
+//             if (teamButtons) teamButtons.style.display = 'none'; // Hide team buttons for single-player mode
+//         } else if (room.mode === 'team') {
+//             roomInfo.textContent = `You have joined the team room: ${room.name}`;
+//             if (teamButtons) teamButtons.style.display = 'block'; // Show team buttons for team mode
+//         }
+//     }
+// });
+
+socket.on('roomError', (message) => {
+    alert(message);
+    window.location.href = '/room.html'; // Redirect back to room selection
+});
+
+socket.on('roomInfoUpdated', (data) => {
+    if (data.roomId !== player.roomId) return;
+
+    room.players = data.players;
+    player = room.players[player.id];
+    console.log(player);
+});

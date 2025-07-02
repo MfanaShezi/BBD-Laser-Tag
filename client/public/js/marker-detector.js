@@ -32,7 +32,7 @@ function drawCrosshair(ctx, canvasOutput, targetInCrosshair) {
 }
 
     // Helper function to process detected markers
-function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrosshair) {
+function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrosshair, players) {
     if (markers.length > 0) {
         // Reset current target
         targetInCrosshair = null;
@@ -44,7 +44,7 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
         // Draw detected markers
         markers.forEach(marker => {
             // Draw marker outline
-            drawMarker(ctxOutput, marker);
+            // drawMarker(ctxOutput, marker);
             
             // Calculate center of marker
             const center = getMarkerCenter(marker);
@@ -52,33 +52,43 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
             // Use different colors based on marker ID
             const colorHue = (marker.id+1 * 30) % 360;
             const color = hsvToRgb(colorHue / 360, 1, 1);
-            
-            // Draw marker ID
-            ctxOutput.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
-            ctxOutput.font = '20px Arial';
-            ctxOutput.fillText(`ID: ${marker.id}`, center.x - 20, center.y - 15);
-            
-            // Check if center point is inside this marker
-            if (isPointInMarker({x: centerX, y: centerY}, marker)) {
-                // Store the target marker if center is inside it
-                targetInCrosshair = {
-                    id: marker.id,
-                    playerId: marker.playerId, // This should be set elsewhere in your code
-                    playerTeam: marker.playerTeam, // This should be set elsewhere in your code
-                    center: center
-                };
+
+            // Get player of marker
+            let markerPlayer = null
+            for (const [key, player] of Object.entries(players)) {
+              if (marker.id === player.qrId) {
+                markerPlayer = player;
+                break;
+              }
+            }   
+            if (markerPlayer) {
+                drawMarker(ctxOutput, marker);
+                // Draw marker ID
+                ctxOutput.fillStyle = `rgb(${color.r}, ${color.g}, ${color.b})`;
+                ctxOutput.font = '20px Arial';
+                ctxOutput.fillText(`${markerPlayer.name} - ${markerPlayer.health}`, center.x - 20, center.y - 15);
                 
-                // Highlight the target marker
-                ctxOutput.lineWidth = 6;
-                ctxOutput.strokeStyle = 'rgba(255, 0, 0, 0.8)';
-                ctxOutput.strokeRect(
-                    center.x - 30,
-                    center.y - 30,
-                    60,
-                    60
-                );
+                // Check if center point is inside this marker
+                if (isPointInMarker({x: centerX, y: centerY}, marker)) {
+                    // Store the target marker if center is inside it
+                    targetInCrosshair = {
+                        id: marker.id,
+                        player: markerPlayer, // This should be set elsewhere in your code
+                        center: center
+                    };
+                    
+                    // Highlight the target marker
+                    ctxOutput.lineWidth = 6;
+                    ctxOutput.strokeStyle = 'rgba(255, 0, 0, 0.8)';
+                    ctxOutput.strokeRect(
+                        center.x - 30,
+                        center.y - 30,
+                        60,
+                        60
+                    );
+                }
             }
-        });
+    });
         
         // document.getElementById('status').innerHTML = `Detected ${markers.length} marker(s)`;
     }
@@ -196,7 +206,7 @@ function hsvToRgb(h, s, v) {
 // Helper function to draw a marker
 function drawMarker(ctx, marker) {
     // Use different colors for different marker IDs
-    const colorHue = (marker.id * 30) % 360;
+    const colorHue = (marker.id+1 * 30) % 360;
     const color = hsvToRgb(colorHue / 360, 1, 1);
     const strokeColor = `rgb(${color.r}, ${color.g}, ${color.b})`;
     
