@@ -136,8 +136,8 @@ io.on('connection', (socket) => {
             health: 5,
             qrId: null,
             roomId: null,
-            score: 0,
-            kills: 0
+            kills: 0,
+            deaths: 0
         }
 
         console.log(players);

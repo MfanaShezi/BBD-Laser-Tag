@@ -77,6 +77,7 @@
         <tr>
             <th>Name</th>
             <th>Health</th>
+            <th>Deaths</th>
             <th>Kills</th>
         </tr>
 
@@ -107,6 +108,7 @@
                 <th>Rank</th>
                 <th>Name</th>
                 <th>Health</th>
+                <th>Deaths</th>
                 <th>Kills</th>
             </tr>
         `;
@@ -120,6 +122,7 @@
                 <tr id="${playerIds[i]}">
                     <td id="name-${playerIds[i]}">${room.players[playerIds[i]].name}</td>
                     <td id="health-${playerIds[i]}">${room.players[playerIds[i]].health}</td>
+                    <td id="deaths-${playerIds[i]}">${room.players[playerIds[i]].deaths}</td>
                     <td id="kills-${playerIds[i]}">${room.players[playerIds[i]].kills}</td>
                 </tr>
             `

@@ -141,7 +141,11 @@
             let playerKeys = Object.keys(room.players);
 
             if (room.numReady >= playerKeys.length) {
-                window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}&role=spectator`
+                if (role == "spectator") {
+                    window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}&role=spectator`;
+                } else {
+                    window.location.href = `/player?playerId=${playerId}&roomId=${roomId}&role=player`;
+                }
             }
 
             document.getElementById("main-title").textContent = `Room: ${room.name}`;
