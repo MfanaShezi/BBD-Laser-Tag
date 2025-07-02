@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet">
     <title>Player Creation</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #121212;
+            font-family: 'Orbitron', sans-serif;
+            background: linear-gradient(135deg, #0f0f0f, #1a1a1a);
+            background-size: 400% 400%;
+            animation: backgroundShift 10s ease infinite;
             color: #f0f0f0;
             margin: 0;
             padding: 0;
@@ -17,6 +20,20 @@
             justify-content: center;
             min-height: 100vh;
             text-align: center;
+        }
+
+        @keyframes backgroundShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        h1 {
+            color: #f0f0f0;
+            text-shadow: 0 0 15px #ff4081, 0 0 25px #ff4081;
+            letter-spacing: 1.5px;
+            margin-bottom: 20px;
+            animation: fadeIn 1s ease-in;
         }
 
         .team-buttons {
@@ -31,43 +48,66 @@
             background-color: #ff4081;
             color: #fff;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            transition: all 0.3s ease;
+            box-shadow: 0 0 5px #ff4081, 0 0 5px #ff4081;
             margin: 5px;
         }
 
         button:hover {
+            transform: scale(1.1);
             background-color: #e03570;
+            box-shadow: 0 0 15px #ff4081, 0 0 30px #ff4081;
         }
 
         input {
+           
             padding: 12px 16px;
             font-size: 18px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
+            border-radius: 8px;
+            border: 2px solid #ff4081;
             width: 250px;
-            margin-top: 10px;
             background: #222;
             color: #fff;
+            box-shadow: 0 0 10px rgba(255, 64, 129, 0.5);
+            transition: box-shadow 0.3s ease, transform 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 15px #ff4081, 0 0 25px #ff4081;
+            transform: scale(1.05);
         }
 
         .player-avatar-container {
             text-align: center;
             margin: 20px 0;
+            animation: slideDown 1s ease-in-out;
         }
 
         .circular-frame {
             width: 150px;
             height: 150px;
             border-radius: 50%;
-            border: 5px solid #fb4483; 
+            border: 5px solid #ff4081;
+            box-shadow: 0 0 15px #ff4081, 0 0 25px #ff4081;
             object-fit: cover;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
-        /* @keyframes moveAvatar {
-            0% { left: 0; }
-            50% { left: calc(100% - 100px); }
-            100% { left: 0; }
-        } */
+        .circular-frame:hover {
+            transform: scale(1.1);
+            box-shadow: 0 0 20px #ff4081, 0 0 35px #ff4081;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
     </style>
 </head>
 <body>
