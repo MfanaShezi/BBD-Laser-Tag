@@ -133,7 +133,7 @@
 
     console.log(roomId);
 
-    document.getElementById("main-title").textContent = `Room: ${roomId} `;
+    // document.getElementById("main-title").textContent = `Room: ${roomId} `;
 
     if (role == "player") {
         document.getElementById("ready-btn-div").innerHTML = `
@@ -183,11 +183,23 @@
 
             let playerKeys = Object.keys(room.players);
 
+            if (room.numReady >= playerKeys.length) {
+                if (role == "spectator") {
+                    window.location.href = `/spectator?playerId=${playerId}&roomId=${roomId}&role=spectator`;
+                } else {
+                    window.location.href = `/player?playerId=${playerId}&roomId=${roomId}&role=player`;
+                }
+            }
+
+            document.getElementById("main-title").textContent = `Room: ${room.name}`;
+
+            // let playerListString = "";
+
             for (let i = 0; i < playerKeys.length; i++) {
                 playerListString += `
                     <li id="${room.players[playerKeys[i]]}">
                         <div 
-                            <span class="player-name-div">${room.players[playerKeys[i]].name} -</span>
+                            <span class="player-name-div">${room.players[playerKeys[i]].name}, Code: ${room.players[playerKeys[i]].qrId}</span>
                             <span id="ready-${playerKeys[i]}" class="player-ready-div">Not Ready</span
                          </div>
                     </li>   

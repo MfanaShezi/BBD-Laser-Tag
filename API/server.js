@@ -11,6 +11,7 @@ const __dirname = path.dirname(__filename);
 
 const nonPlayerQrs = {10: 'respawn', 11: 'mysteryBox'}
 const killsForWin = 5;
+const startHealth = 5; // Default health for players
 
 // Load environment variables from .env file
 dotenv.config();
@@ -66,7 +67,7 @@ io.on('connection', (socket) => {
         }
 
         const roomId = (Math.random() + 1).toString(36).substring(2);
-        rooms[roomId] = { id: roomId, name, mode, players: {}, spectators: {}, qrsUsed: [], numReady: 0 };
+        rooms[roomId] = { id: roomId, name, mode, players: {}, spectators: {}, qrsUsed: [], numReady: 0 , ended: false};
 
         console.log(`Room created: ${name} (ID: ${roomId}, Mode: ${mode})`);
         socket.emit('roomCreated', rooms[roomId]);
@@ -134,11 +135,13 @@ io.on('connection', (socket) => {
         players[playerId] = {
             id: playerId,
             name: data.playerName,
-            health: 5,
+            health: startHealth,
             qrId: null,
             roomId: null,
-            score: 0,
-            kills: 0
+            // score: 0,
+            kills: 0,
+            deaths: 0,
+            damage:1
         }
 
         console.log(players);
@@ -152,32 +155,51 @@ io.on('connection', (socket) => {
     });
 
     socket.on("hit", (data) => {
-      const playerHitId = data.playerHit.id;
+      const playerHitId = data.playerHitId;
       const playerShootingId = data.playerShootingId;
-      const roomId = data.playerHit.roomId;
-      if (nonPlayerQrs[data.playerHit.qrId] === 'respawn') {
-
-      } else if (nonPlayerQrs[data.playerHit.qrId] === 'mysteryBox') {
+      const roomId = data.roomId;
+      if (nonPlayerQrs[playerHitId] === 'respawn') {
+        if (rooms[roomId].players[playerShootingId].health <= 0) {
+          rooms[roomId].players[playerShootingId].health = startHealth;
+          rooms[roomId].players[playerShootingId].damage = 1; // Reset QR ID on respawn
+        }
+      } else if (nonPlayerQrs[playerHitId] === 'mysteryBox') {
 
       } else {
         // console.log(rooms);
         if (rooms[roomId].players[playerHitId].health <= 0) {
           rooms[roomId].players[playerHitId].health = 0;
         } else {
-          rooms[roomId].players[playerHitId].health -= 1;
-          if (playerHitId !== playerShootingId) {
-            rooms[roomId].players[playerShootingId].kills += 1;
+          rooms[roomId].players[playerHitId].health -= rooms[roomId].players[playerShootingId].damage;
+          if (rooms[roomId].players[playerHitId].health <= 0) {
+            rooms[roomId].players[playerHitId].health = 0;
+            if (playerHitId !== playerShootingId) {
+              rooms[roomId].players[playerShootingId].kills += 1;
+            }
+            rooms[roomId].players[playerHitId].deaths += 1;
           }
+
           if (rooms[roomId].players[playerShootingId].kills >= killsForWin) {
             io.emit("gameOver", {
               winner: rooms[roomId].players[playerShootingId],
               roomId: roomId
             });
+            rooms[roomId].ended = true;
+            // roomsEndState[roomId] = {roomId: roomId, players: rooms[roomId].players};
+            io.emit("sendRoomInfo", rooms[roomId]);
           }
         }
       }
 
+      socket.on("hitFrame", (data) => {
+        io.emit("hitFrameFromServer", data);
+      });
+
       io.emit("sendRoomInfo", rooms[roomId]);
+    });
+
+    socket.on("nukeRoom", (roomId) => {
+      delete rooms[roomId];
     });
 });
 

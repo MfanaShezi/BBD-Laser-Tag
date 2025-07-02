@@ -34,7 +34,7 @@ function drawCrosshair(ctx, canvasOutput, targetInCrosshair) {
 }
 
     // Helper function to process detected markers
-function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrosshair, players) {
+function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrosshair, players, currentPlayer) {
     if (markers.length > 0) {
         // Reset current target
         targetInCrosshair = null;
@@ -69,7 +69,7 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
             let isNonPlayer = false;
             if (nonPlayerQrs[marker.id] == 'respawn') {
                 markerPlayer = {
-                    id: 'respawn',
+                    id: marker.id,
                     name: 'Respawn',
                     health: 1,
                     qrId: marker.id
@@ -108,16 +108,21 @@ function processDetectedMarkers(markers, ctxOutput, canvasOutput, targetInCrossh
                         player: markerPlayer, // This should be set elsewhere in your code
                         center: center
                     };
-                    
-                    // Highlight the target marker
-                    ctxOutput.lineWidth = 6;
-                    ctxOutput.strokeStyle = 'rgba(255, 255, 0, 0.8)';
-                    ctxOutput.strokeRect(
-                        center.x - 30,
-                        center.y - 30,
-                        60,
-                        60
-                    );
+                    if (currentPlayer.health > 0 && marker.id === 10) {
+                        // Nothing
+                    } else if (currentPlayer.health <= 0 && marker.id !== 10) { 
+                        //Nothing
+                    } else {
+                        // Highlight the target marker
+                        ctxOutput.lineWidth = 6;
+                        ctxOutput.strokeStyle = 'rgba(255, 255, 0, 0.8)';
+                        ctxOutput.strokeRect(
+                            center.x - 30,
+                            center.y - 30,
+                            60,
+                            60
+                        );
+                    }
                 }
             } 
     });
