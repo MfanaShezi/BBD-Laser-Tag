@@ -15,7 +15,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const nonPlayerQrs = {10: 'respawn', 11: 'mysteryBox'}
-const killsForWin = 5;
+const killsForWin = 1;
 const startHealth = 5; // Default health for players
 
 // Load environment variables from .env file
@@ -185,7 +185,6 @@ io.on('connection', (socket) => {
               roomId: roomId
             });
             rooms[roomId].ended = true;
-            // roomsEndState[roomId] = {roomId: roomId, players: rooms[roomId].players};
             io.emit("sendRoomInfo", rooms[roomId]);
           }
         }

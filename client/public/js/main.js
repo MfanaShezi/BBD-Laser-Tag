@@ -27,15 +27,9 @@ const playerId = urlParams.get('playerId');
 const roomId = urlParams.get('roomId');
 
 function onLoad() {
-    // Create AR detector with ARUCO_MIP_36h12 dictionary (better detection than standard ARUCO)
-    // const urlParams = new URLSearchParams(window.location.search);
-    // player.id = urlParams.get('playerId');
-    // player.name = urlParams.get('playerName') || `Player ${player.id  || ''}`;
-    // player.roomId = urlParams.get('roomId');
-    // room.id = player.roomId;
-    // player.team = urlParams.get('team') || 'default';  
-
-    // socket.emit('joinRoom', { roomId: player.roomId, player:player});
+    if (player) {
+        socket.emit("requestPlayerId", {playerName: player.name});
+    }
     socket.emit("requestRoomInfo", {roomId: roomId});
     
     detector = new AR.Detector({ 
