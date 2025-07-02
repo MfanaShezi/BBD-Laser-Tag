@@ -139,7 +139,8 @@ io.on('connection', (socket) => {
             qrId: null,
             roomId: null,
             score: 0,
-            kills: 0
+            kills: 0,
+            deaths: 0,
         }
 
         console.log(players);
@@ -153,15 +154,14 @@ io.on('connection', (socket) => {
     });
 
     socket.on("hit", (data) => {
-      const playerHitId = data.playerHit.id;
+      const playerHitId = data.playerHitId;
       const playerShootingId = data.playerShootingId;
-      const roomId = data.playerHit.roomId;
-      if (nonPlayerQrs[data.playerHit.qrId] === 'respawn') {
-        console.log(rooms[roomId]);
+      const roomId = data.roomId;
+      if (nonPlayerQrs[playerHitId] === 'respawn') {
         if (rooms[roomId].players[playerShootingId].health <= 0) {
           rooms[roomId].players[playerShootingId].health = startHealth;
         }
-      } else if (nonPlayerQrs[data.playerHit.qrId] === 'mysteryBox') {
+      } else if (nonPlayerQrs[playerHitId] === 'mysteryBox') {
 
       } else {
         // console.log(rooms);
@@ -171,6 +171,9 @@ io.on('connection', (socket) => {
           rooms[roomId].players[playerHitId].health -= 1;
           if (playerHitId !== playerShootingId) {
             rooms[roomId].players[playerShootingId].kills += 1;
+          }
+          if (rooms[roomId].players[playerHitId].health <= 0) {
+            rooms[roomId].players[playerHitId].deaths += 1;
           }
           if (rooms[roomId].players[playerShootingId].kills >= killsForWin) {
             io.emit("gameOver", {

@@ -193,7 +193,7 @@ function processVideo() {
                     return mappedMarker;
                 });
                 
-                targetInCrosshair = processDetectedMarkers(mappedMarkers, ctxOutput, canvasOutput, targetInCrosshair, room.players);
+                targetInCrosshair = processDetectedMarkers(mappedMarkers, ctxOutput, canvasOutput, targetInCrosshair, room.players, player);
             } else {
                 targetInCrosshair = null;
             }
@@ -232,7 +232,7 @@ shootBtn.addEventListener('click', function() {
         if (player.health > 0 && targetInCrosshair.id == 10) return; // Don't shoot at yourself if alive
         if (targetInCrosshair.player.health <= 0) return; // Don't shoot if target is already dead
         // Send hit event to server
-        socket.emit('hit', {'playerShootingId': player.id, 'playerHit':targetInCrosshair.player});
+        socket.emit('hit', {'roomId': player.roomId, 'playerShootingId': player.id, 'playerHitId':targetInCrosshair.player.id});
         setTimeout(() => {
             playHitSound();
         }, 250);
