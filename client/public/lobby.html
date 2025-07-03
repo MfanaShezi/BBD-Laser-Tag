@@ -126,6 +126,39 @@
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        @keyframes fadeInWord {
+        from { opacity: 0; }
+        to { opacity: 1; }
+        }
+
+        
+    .animated-word span {
+        opacity: 0;
+        animation: fadeInWord 0.5s ease-in forwards;
+        animation-iteration-count: infinite;
+    }
+
+    .animated-word span:nth-child(1) {
+        animation-delay: 0.5s;
+    }
+
+    .animated-word span:nth-child(2) {
+        animation-delay: 1s;
+    }
+
+    .animated-word span:nth-child(3) {
+        animation-delay: 1.5s;
+    }
+
+    .animated-word span:nth-child(4) {
+        animation-delay: 2s;
+    }
+
+    .animated-word span:nth-child(5) {
+        animation-delay: 2.5s;
+    }
+    
     </style>
 </head>
 <body>
@@ -133,6 +166,16 @@
     <div class="roomtitle-info">
         <h2 id="main-title" style="margin: 15px;">Room:</h2>
     </div>
+    <article>
+        <p class="animated-word">
+            Waiting for players to join
+            <span>.</span>
+            <span>.</span>
+            <span>.</span>
+            <span>.</span>
+            <span>.</span>
+        </p>
+    </article>
     <div class="lobby-container">
         <div>
             <h2 style="margin-bottom: 10px;">Players</h2>

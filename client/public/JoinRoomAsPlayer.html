@@ -270,6 +270,20 @@
     <script src="js/marker-detector.js"></script>
     <script src="js/main.js"></script>
     <script>
+         window.onload = function() {
+            console.log('window loaded');
+
+            // Preload the background music
+            backgroundMusic = new Audio('./sound/gameplay.mp3');
+            backgroundMusic.loop = true; // Enable looping
+            backgroundMusic.volume = 0.1; // Set volume (0.0 to 1.0)
+
+            // Wait for any user interaction to play the music
+            document.body.addEventListener('click', function playMusic() {
+                backgroundMusic.play().catch(e => console.log('Error playing music:', e));
+                document.body.removeEventListener('click', playMusic); // Remove listener after playing
+            });
+        };
         // Call onLoad when the page is ready
         document.addEventListener('DOMContentLoaded', onLoad);
     </script>
