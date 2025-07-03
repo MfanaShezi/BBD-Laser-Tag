@@ -316,7 +316,23 @@
  
         };
     }
-});
+   });
+
+   window.onload = function() {
+            console.log('window loaded');
+
+            // Preload the background music
+            backgroundMusic = new Audio('./sound/gameplay.mp3'); // Ensure the path is correct
+            backgroundMusic.loop = true; // Enable looping
+            backgroundMusic.volume = 0.5; // Set volume (0.0 to 1.0)
+
+            // Wait for any user interaction to play the music
+            document.body.addEventListener('click', function playMusic() {
+                backgroundMusic.play().catch(e => console.log('Error playing music:', e));
+                document.body.removeEventListener('click', playMusic); // Remove listener after playing
+            });
+
+        };
 
 </script>
 </html>
